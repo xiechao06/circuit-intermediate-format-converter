@@ -1,0 +1,231 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "SchematicData",
+    "type": "object",
+    "properties": {
+        "library": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string"
+                        },
+                        "ref": {
+                            "type": "string"
+                        },
+                        "package": {
+                            "type": "string"
+                        },
+                        "pins": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "type": "string"
+                                    },
+                                    "rel_x": {
+                                        "type": "number"
+                                    },
+                                    "rel_y": {
+                                        "type": "number"
+                                    }
+                                },
+                                "required": [
+                                    "id",
+                                    "name",
+                                    "type",
+                                    "rel_x",
+                                    "rel_y"
+                                ],
+                                "additionalProperties": false
+                            }
+                        },
+                        "graphics_ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "type",
+                        "ref",
+                        "pins"
+                    ],
+                    "additionalProperties": false
+                }
+            }
+        },
+        "instances": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "uuid": {
+                        "type": "string"
+                    },
+                    "lib_id": {
+                        "type": "string"
+                    },
+                    "designator": {
+                        "type": "string"
+                    },
+                    "placement": {
+                        "type": "object",
+                        "properties": {
+                            "x": {
+                                "type": "number"
+                            },
+                            "y": {
+                                "type": "number"
+                            },
+                            "rotation": {
+                                "type": "number"
+                            },
+                            "mirror": {
+                                "type": "boolean"
+                            }
+                        },
+                        "required": [
+                            "x",
+                            "y",
+                            "rotation",
+                            "mirror"
+                        ],
+                        "additionalProperties": false
+                    },
+                    "attributes": {
+                        "type": "object",
+                        "properties": {
+                            "Value": {
+                                "type": "string"
+                            },
+                            "Tolerance": {
+                                "type": "string"
+                            },
+                            "Firmware": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "required": [
+                    "uuid",
+                    "lib_id",
+                    "designator",
+                    "placement",
+                    "attributes"
+                ],
+                "additionalProperties": false
+            }
+        },
+        "wires": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "wire_id": {
+                        "type": "string"
+                    },
+                    "segments": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "x": {
+                                    "type": "number"
+                                },
+                                "y": {
+                                    "type": "number"
+                                }
+                            },
+                            "required": [
+                                "x",
+                                "y"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "connects": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "ref": {
+                                    "type": "string"
+                                },
+                                "pin": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "ref",
+                                "pin"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                },
+                "required": [
+                    "wire_id",
+                    "segments",
+                    "connects"
+                ],
+                "additionalProperties": false
+            }
+        },
+        "nets": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "net_id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "nodes": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "ref": {
+                                    "type": "string"
+                                },
+                                "pin": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "ref",
+                                "pin"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                },
+                "required": [
+                    "net_id",
+                    "name",
+                    "nodes"
+                ],
+        "additionalProper
