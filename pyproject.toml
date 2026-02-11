@@ -6,6 +6,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []
 
+[project.scripts]
+cifconv = "main:main"
+
 [tool.commitizen]
 name = "cz_conventional_commits"
 tag_format = "$version"
@@ -15,6 +18,4 @@ update_changelog_on_bump = true
 major_version_zero = true
 
 [dependency-groups]
-dev = [
-    "pytest>=9.0.2",
-]
+dev = ["pytest>=9.0.2"]
