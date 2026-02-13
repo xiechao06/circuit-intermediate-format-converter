@@ -1,6 +1,4 @@
-def main():
-    print("Hello from circuit-intermediate-format-converter!")
-
+from cifconv.cli import main
 
 if __name__ == "__main__":
     main()

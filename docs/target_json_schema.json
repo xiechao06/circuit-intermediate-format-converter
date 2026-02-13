@@ -5,6 +5,7 @@
     "properties": {
         "library": {
             "type": "array",
+            "description": "模型库，包含所有元件的定义, 对应KiCad Schematic的lib_symbols表达式",
             "items": {
                 "type": "object",
                 "additionalProperties": {
@@ -14,10 +15,12 @@
                             "type": "string"
                         },
                         "ref": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "元件的参考标识符，对应KiCad Schematic的Reference属性"
                         },
                         "package": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "元件封装，对应KiCad Schematic的Footprint属性"
                         },
                         "pins": {
                             "type": "array",
@@ -28,16 +31,22 @@
                                         "type": "string"
                                     },
                                     "name": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "引脚名称，对应pin表达式的Name字段"
                                     },
                                     "type": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "引脚类型，如power_in、power_out、bidirectional、passive等"
                                     },
                                     "rel_x": {
                                         "type": "number"
                                     },
                                     "rel_y": {
                                         "type": "number"
+                                    },
+                                    "angle": {
+                                        "type": "number",
+                                        "description": "引脚与水平向右方向的夹角，单位为度，逆时针为正"
                                     }
                                 },
                                 "required": [
@@ -49,9 +58,6 @@
                                 ],
                                 "additionalProperties": false
                             }
-                        },
-                        "graphics_ref": {
-                            "type": "string"
                         }
                     },
                     "required": [

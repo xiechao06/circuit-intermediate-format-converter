@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+""" "
+Tokenizer for the KiCad schematic format. This is a simple implementation that can be improved with more features and error handling.
+"""
+
+from cifconv.cifconv_token import Token, TokenType
+
+
+def kicad_sch_tokenize(input_data: str):
+    i = 0
+    line = 1
+    col = 1
+    while i < len(input_data):
+        c = input_data[i]
+        if c == "\n":
+            line += 1
+            col = 1
+            i += 1
+            continue
+        elif c.isspace():
+            col += 1
+            i += 1
+            continue
+        elif c == "(":
+            yield Token(TokenType.LPAREN, c, col, line)
+            col += 1
+            i += 1
+        elif c == ")":
+            yield Token(TokenType.RPAREN, c, col, line)
+            col += 1
+            i += 1
+        elif c == '"':
+            start = i + 1
+            i += 1
+            while i < len(input_data) and input_data[i] != '"':
+                if input_data[i] == "\\" and i + 1 < len(input_data):
+                    i += 2  # Skip escaped character
+                else:
+                    i += 1
+            yield Token(TokenType.STRING, input_data[start:i], col, line)
+            i += 1  # Skip closing quote
+            col += i - start + 1
+        elif c.isdigit() or (
+            c == "-" and i + 1 < len(input_data) and input_data[i + 1].isdigit()
+        ):
+            start = i
+            if c == "-":
+                i += 1
+            while i < len(input_data) and (
+                input_data[i].isdigit() or input_data[i] == "."
+            ):
+                i += 1
+            yield Token(TokenType.NUMBER, input_data[start:i], col, line)
+            col += i - start
+        else:
+            start = i
+            while (
+                i < len(input_data)
+                and not input_data[i].isspace()
+                and input_data[i] not in '()"'
+            ):
+                i += 1
+            yield Token(TokenType.SYMBOL, input_data[start:i], col, line)
+            col += i - start
+
+
+if __name__ == "__main__":
+    input_data = """(symbol "R" (lib_id "Device:R") (at 0 0) (unit 1)
+  (property "Reference" "R1" (id 0) (at 0 0) (layer "F.SilkS"))
+  (property "Value" "10k" (id 1) (at 0 0) (layer "F.SilkS"))
+  (property "Footprint" "Resistor_SMD:R_0805" (id 2) (at 0 0) (layer "F.SilkS"))
+    (pin "1" (at -0.5 0) (length 1) (type passive))
+    (pin "2" (at 0.5 0) (length 1) (type passive))
+)"""
+    for token in kicad_sch_tokenize(input_data):
+        print(token)
