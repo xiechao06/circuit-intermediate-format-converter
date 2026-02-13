@@ -1,14 +1,8 @@
-from os import abort
 from typing import Generator
 
 from cifconv.cifconv_token import Token
 from cifconv.expr import AtomExpr, Expr, ExprType, ListExpr, RParenExpr
 from cifconv.kicad_schematic_tokenizer import kicad_sch_tokenize
-
-
-def error(message: str):
-    print(f"Error: {message}")
-    abort()
 
 
 def read_expr(tokens: Generator[Token, None, None]) -> Expr | None:
@@ -18,7 +12,7 @@ def read_expr(tokens: Generator[Token, None, None]) -> Expr | None:
             while True:
                 sub_expr = read_expr(tokens)
                 if sub_expr is None:
-                    error(
+                    raise ValueError(
                         f"Unexpected end of input while parsing list starting at line {token.line}, column {token.col}"
                     )
                     break
