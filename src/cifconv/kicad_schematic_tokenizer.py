@@ -9,6 +9,13 @@ from cifconv.cifconv_token import Token, TokenType
 
 
 def kicad_sch_tokenize(input_data: str):
+    """Tokenize a KiCad schematic source string into a stream of tokens.
+
+    The tokenizer yields Token instances with type, value, column, and line
+    information. It recognizes parentheses, quoted strings (with basic escape
+    handling), numbers (including negative and decimal forms), and symbols, while
+    skipping whitespace and tracking line/column positions.
+    """
     i = 0
     line = 1
     col = 1

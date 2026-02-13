@@ -1,6 +1,6 @@
-from build.lib.cifconv.read_expr import read_expr
 from cifconv.cifconv_token import Token, TokenType
 from cifconv.expr import AtomExpr, ListExpr, RParenExpr
+from cifconv.read_expr import read_expr
 
 
 def test_rparen():

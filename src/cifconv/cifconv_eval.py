@@ -102,7 +102,7 @@ def process_symbol(symbol_expr: ListExpr):
     footprint: str | None = None
     pins: list[Pin] = []
     for sub_expr in sub_exprs[1:]:
-        if _is_list(sub_expr, "property"):
+        if is_list(sub_expr, "property"):
             # extract property
             property_sub_exprs = extract_list_exprs(sub_expr, "property")
             property_key = expect_str(property_sub_exprs[0])
@@ -111,7 +111,7 @@ def process_symbol(symbol_expr: ListExpr):
                 ref = property_value
             elif property_key == "Footprint":
                 footprint = property_value
-        if _is_list(sub_expr, "symbol"):
+        if is_list(sub_expr, "symbol"):
             assert isinstance(sub_expr, ListExpr)
             symbol_name = expect_str(sub_expr.sub_exprs[1])
             pins.extend(_collect_symbol_pins(symbol_name, sub_expr))
@@ -147,13 +147,13 @@ def _process_pin(symbol_name: str, pin_expr: ListExpr) -> Pin:
     rel_y: float | None = None
     rotation: float = 0
     for sub_expr in sub_exprs[1:]:
-        if _is_list(sub_expr, "name"):
+        if is_list(sub_expr, "name"):
             assert isinstance(sub_expr, ListExpr)
             name = expect_str(sub_expr.sub_exprs[1])
-        elif _is_list(sub_expr, "number"):
+        elif is_list(sub_expr, "number"):
             assert isinstance(sub_expr, ListExpr)
             id = symbol_name + ":" + expect_str(sub_expr.sub_exprs[1])
-        elif _is_list(sub_expr, "at"):
+        elif is_list(sub_expr, "at"):
             assert isinstance(sub_expr, ListExpr)
             rel_x = expect_number(sub_expr.sub_exprs[1])
             rel_y = expect_number(sub_expr.sub_exprs[2])
@@ -182,21 +182,21 @@ def _process_pin(symbol_name: str, pin_expr: ListExpr) -> Pin:
 def _collect_symbol_pins(symbol_name: str, expr: ListExpr) -> list[Pin]:
     pins: list[Pin] = []
     for sub_expr in expr.sub_exprs:
-        if _is_list(sub_expr, "pin"):
+        if is_list(sub_expr, "pin"):
             assert isinstance(sub_expr, ListExpr)
             pin = _process_pin(symbol_name=symbol_name, pin_expr=sub_expr)
             pins.append(pin)
     return pins
 
 
-def _is_list(expr: Expr, first_token_value: str) -> bool:
-    if expr.type != expr.type.LIST:
+def is_list(expr: Expr, first_token_value: str) -> bool:
+    if not isinstance(expr, ListExpr):
         return False
     assert isinstance(expr, ListExpr)
     if len(expr.sub_exprs) == 0:
         return False
     first_token = expr.sub_exprs[0]
-    if first_token.type != first_token.type.ATOM:
+    if not isinstance(first_token, AtomExpr):
         return False
     assert isinstance(first_token, AtomExpr)
     assert isinstance(first_token.value, Token)
@@ -210,7 +210,7 @@ def cifconv_eval(expr: Expr | None):
     if expr is None:
         return schema
     for expr in eat_header(expr):
-        if _is_list(expr, "lib_symbols"):
+        if is_list(expr, "lib_symbols"):
             symbol_exprs = extract_list_exprs(expr, "lib_symbols")
             for symbol_expr in symbol_exprs:
                 assert isinstance(symbol_expr, ListExpr)
