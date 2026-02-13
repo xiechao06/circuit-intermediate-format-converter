@@ -1,4 +1,3 @@
-from os import abort
 from typing import cast
 
 from loguru import logger
@@ -12,8 +11,7 @@ from cifconv.symbol import Symbol
 
 def _check(msg: str | None):
     if msg is not None:
-        print(f"Error: {msg}")
-        abort()
+        raise ValueError(msg)
 
 
 def should_be_list(expr: Expr, first_token_value: str):
@@ -37,24 +35,20 @@ def should_be_list(expr: Expr, first_token_value: str):
         return msg
 
 
-def _extract_list_exprs(expr: Expr, first_token_value: str) -> list[Expr]:
+def extract_list_exprs(expr: Expr, first_token_value: str) -> list[Expr]:
     msg = f"Expected a list starting with '{first_token_value}' at line {expr.line}, column {expr.col}, but got {expr.type}"
     if expr.type != expr.type.LIST:
-        print(f"Error: {msg}")
-        abort()
+        raise ValueError(msg)
     assert isinstance(expr, ListExpr)
     if len(expr.sub_exprs) == 0:
-        print(f"Error: {msg}")
-        abort()
+        raise ValueError(msg)
     first_token = expr.sub_exprs[0]
     if first_token.type != first_token.type.ATOM:
-        print(f"Error: {msg}")
-        abort()
+        raise ValueError(msg)
     assert isinstance(first_token, AtomExpr)
     assert isinstance(first_token.value, Token)
     if first_token.value.value != first_token_value:
-        print(f"Error: {msg}")
-        abort()
+        raise ValueError(msg)
     return expr.sub_exprs[1:]
 
 
@@ -64,12 +58,10 @@ def eat_header(expr: Expr) -> list[Expr]:
 
     这部分没有需要提确的信息， 只是保证格式正确。
     """
-    _check(should_be_list(expr, "kicad_sch"))
-    assert isinstance(expr, ListExpr)
-    return expr.sub_exprs[1:]
+    return extract_list_exprs(expr, "kicad_sch")
 
 
-def _expect_number(expr: Expr) -> float:
+def expect_number(expr: Expr) -> float:
     if expr.type != expr.type.ATOM:
         raise ValueError(
             f"Error: Expected a number atom at line {expr.line}, column {expr.col}, but got {expr.type}"
@@ -82,7 +74,7 @@ def _expect_number(expr: Expr) -> float:
     return float(expr.value.value)
 
 
-def _expect_str(expr: Expr) -> str:
+def expect_str(expr: Expr) -> str:
     if expr.type != expr.type.ATOM:
         raise ValueError(
             f"Error: Expected a string atom at line {expr.line}, column {expr.col}, but got {expr.type}"
@@ -95,9 +87,9 @@ def _expect_str(expr: Expr) -> str:
     return expr.value.value
 
 
-def _process_symbol(symbol_expr: ListExpr):
-    sub_exprs = _extract_list_exprs(symbol_expr, "symbol")
-    id = _expect_str(sub_exprs[0])
+def process_symbol(symbol_expr: ListExpr):
+    sub_exprs = extract_list_exprs(symbol_expr, "symbol")
+    id = expect_str(sub_exprs[0])
     logger.debug(f"Processing symbol with id: {id}")
     type_: str | None = None
     name: str = ""
@@ -112,16 +104,16 @@ def _process_symbol(symbol_expr: ListExpr):
     for sub_expr in sub_exprs[1:]:
         if _is_list(sub_expr, "property"):
             # extract property
-            property_sub_exprs = _extract_list_exprs(sub_expr, "property")
-            property_key = _expect_str(property_sub_exprs[0])
-            property_value = _expect_str(property_sub_exprs[1])
+            property_sub_exprs = extract_list_exprs(sub_expr, "property")
+            property_key = expect_str(property_sub_exprs[0])
+            property_value = expect_str(property_sub_exprs[1])
             if property_key == "Reference":
                 ref = property_value
             elif property_key == "Footprint":
                 footprint = property_value
         if _is_list(sub_expr, "symbol"):
             assert isinstance(sub_expr, ListExpr)
-            symbol_name = _expect_str(sub_expr.sub_exprs[1])
+            symbol_name = expect_str(sub_expr.sub_exprs[1])
             pins.extend(_collect_symbol_pins(symbol_name, sub_expr))
 
     return Symbol(
@@ -133,7 +125,7 @@ def _process_symbol(symbol_expr: ListExpr):
     )
 
 
-def _expect_symbol(expr: Expr) -> str:
+def expect_symbol(expr: Expr) -> str:
     if expr.type != expr.type.ATOM:
         raise ValueError(
             f"Error: Expected a symbol atom at line {expr.line}, column {expr.col}, but got {expr.type}"
@@ -147,8 +139,8 @@ def _expect_symbol(expr: Expr) -> str:
 
 
 def _process_pin(symbol_name: str, pin_expr: ListExpr) -> Pin:
-    sub_exprs = _extract_list_exprs(pin_expr, "pin")
-    type_: str = _expect_symbol(sub_exprs[0])
+    sub_exprs = extract_list_exprs(pin_expr, "pin")
+    type_: str = expect_symbol(sub_exprs[0])
     name: str | None = None
     id: str = ""
     rel_x: float | None = None
@@ -157,16 +149,16 @@ def _process_pin(symbol_name: str, pin_expr: ListExpr) -> Pin:
     for sub_expr in sub_exprs[1:]:
         if _is_list(sub_expr, "name"):
             assert isinstance(sub_expr, ListExpr)
-            name = _expect_str(sub_expr.sub_exprs[1])
+            name = expect_str(sub_expr.sub_exprs[1])
         elif _is_list(sub_expr, "number"):
             assert isinstance(sub_expr, ListExpr)
-            id = symbol_name + ":" + _expect_str(sub_expr.sub_exprs[1])
+            id = symbol_name + ":" + expect_str(sub_expr.sub_exprs[1])
         elif _is_list(sub_expr, "at"):
             assert isinstance(sub_expr, ListExpr)
-            rel_x = _expect_number(sub_expr.sub_exprs[1])
-            rel_y = _expect_number(sub_expr.sub_exprs[2])
+            rel_x = expect_number(sub_expr.sub_exprs[1])
+            rel_y = expect_number(sub_expr.sub_exprs[2])
             rotation = (
-                _expect_number(sub_expr.sub_exprs[3])
+                expect_number(sub_expr.sub_exprs[3])
                 if len(sub_expr.sub_exprs) > 3
                 else 0
             )
@@ -219,10 +211,9 @@ def cifconv_eval(expr: Expr | None):
         return schema
     for expr in eat_header(expr):
         if _is_list(expr, "lib_symbols"):
-            symbol_exprs = _extract_list_exprs(expr, "lib_symbols")
+            symbol_exprs = extract_list_exprs(expr, "lib_symbols")
             for symbol_expr in symbol_exprs:
-                _check(should_be_list(symbol_expr, "symbol"))
                 assert isinstance(symbol_expr, ListExpr)
-                schema.symbols.append(_process_symbol(symbol_expr))
+                schema.symbols.append(process_symbol(symbol_expr))
 
     return schema

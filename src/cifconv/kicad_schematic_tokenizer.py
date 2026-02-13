@@ -3,6 +3,8 @@
 Tokenizer for the KiCad schematic format. This is a simple implementation that can be improved with more features and error handling.
 """
 
+from sys import stdin
+
 from cifconv.cifconv_token import Token, TokenType
 
 
@@ -65,12 +67,6 @@ def kicad_sch_tokenize(input_data: str):
 
 
 if __name__ == "__main__":
-    input_data = """(symbol "R" (lib_id "Device:R") (at 0 0) (unit 1)
-  (property "Reference" "R1" (id 0) (at 0 0) (layer "F.SilkS"))
-  (property "Value" "10k" (id 1) (at 0 0) (layer "F.SilkS"))
-  (property "Footprint" "Resistor_SMD:R_0805" (id 2) (at 0 0) (layer "F.SilkS"))
-    (pin "1" (at -0.5 0) (length 1) (type passive))
-    (pin "2" (at 0.5 0) (length 1) (type passive))
-)"""
+    input_data = stdin.read()
     for token in kicad_sch_tokenize(input_data):
         print(token)
