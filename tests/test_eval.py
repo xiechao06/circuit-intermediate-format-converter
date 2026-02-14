@@ -6,6 +6,7 @@ from cifconv.cifconv_eval import (
     expect_number,
     expect_str,
     is_list,
+    process_label,
     process_pin,
     process_symbol,
     process_symbol_instance,
@@ -595,3 +596,79 @@ def test_process_wire():
     assert len(wire.points) == 2
     assert wire.points[0] == (69.85, 115.57)
     assert wire.points[1] == (69.85, 130.81)
+
+
+def test_process_label():
+    input_data = """
+    (label "SD_D1"
+        (at 100.5 50.25 0)
+        (effects
+            (font
+                (size 1.27 1.27)
+            )
+        )
+        (uuid "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+    )
+"""
+    tokens = list(kicad_sch_tokenize(input_data))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    label = process_label(expr)
+
+    assert label.text == "SD_D1"
+    assert label.x == 100.5
+    assert label.y == 50.25
+    assert label.rotation == 0
+    assert label.uuid == "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+
+def test_process_label_with_rotation():
+    input_data = """
+    (label "CLK"
+        (at 200 150 90)
+        (effects
+            (font
+                (size 1.27 1.27)
+            )
+        )
+        (uuid "11111111-2222-3333-4444-555555555555")
+    )
+"""
+    tokens = list(kicad_sch_tokenize(input_data))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    label = process_label(expr)
+
+    assert label.text == "CLK"
+    assert label.x == 200
+    assert label.y == 150
+    assert label.rotation == 90
+    assert label.uuid == "11111111-2222-3333-4444-555555555555"
+
+
+def test_process_label_missing_uuid():
+    input_data = """
+    (label "NET"
+        (at 10 20 0)
+        (effects (font (size 1.27 1.27)))
+    )
+"""
+    tokens = list(kicad_sch_tokenize(input_data))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    with pytest.raises(ValueError, match="Label is missing uuid"):
+        process_label(expr)
+
+
+def test_process_label_missing_at():
+    input_data = """
+    (label "NET"
+        (effects (font (size 1.27 1.27)))
+        (uuid "aaa-bbb")
+    )
+"""
+    tokens = list(kicad_sch_tokenize(input_data))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    with pytest.raises(ValueError, match="Label is missing position"):
+        process_label(expr)

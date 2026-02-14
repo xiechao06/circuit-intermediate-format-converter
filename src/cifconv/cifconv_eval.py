@@ -4,6 +4,7 @@ from loguru import logger
 
 from cifconv.bus import Bus
 from cifconv.expr import AtomExpr, Expr, ListExpr
+from cifconv.label import Label
 from cifconv.pin import Pin, PinType
 from cifconv.schema import Schema
 from cifconv.symbol import Symbol
@@ -298,6 +299,45 @@ def process_bus(bus_expr: ListExpr):
     return Bus(uuid=uuid, points=points, connected_pins=[])
 
 
+def process_label(label_expr: ListExpr) -> Label:
+    """
+    Process a local label expression.
+
+    Parses a label expression per the KiCad schematic file format:
+        (label "TEXT" (at X Y ROT) (effects ...) (uuid "..."))
+
+    Args:
+        label_expr: A list expression representing a label.
+
+    Returns:
+        Label: A Label object with text, position, rotation, and uuid.
+
+    Raises:
+        ValueError: If the label is missing text, position, or uuid.
+    """
+    sub_exprs = expect_list(label_expr, "label")
+    text = expect_str(sub_exprs[0])
+    uuid = ""
+    x: float | None = None
+    y: float | None = None
+    rotation: float = 0
+    for sub_expr in sub_exprs[1:]:
+        if is_list(sub_expr, "at"):
+            assert isinstance(sub_expr, ListExpr)
+            x = expect_number(sub_expr.sub_exprs[1])
+            y = expect_number(sub_expr.sub_exprs[2])
+            if len(sub_expr.sub_exprs) > 3:
+                rotation = expect_number(sub_expr.sub_exprs[3])
+        elif is_list(sub_expr, "uuid"):
+            assert isinstance(sub_expr, ListExpr)
+            uuid = expect_str(sub_expr.sub_exprs[1])
+    if uuid == "":
+        raise ValueError("Label is missing uuid")
+    if x is None or y is None:
+        raise ValueError("Label is missing position (at)")
+    return Label(text=text, x=x, y=y, rotation=rotation, uuid=uuid)
+
+
 def cifconv_eval(expr: Expr | None):
     schema = Schema()
     if expr is None:
@@ -316,5 +356,8 @@ def cifconv_eval(expr: Expr | None):
             schema.wires.append(process_wire(expr))
         elif is_list(expr, "bus"):
             assert isinstance(expr, ListExpr)
-            schema.wires.append(process_bus(expr))
+            schema.buses.append(process_bus(expr))
+        elif is_list(expr, "label"):
+            assert isinstance(expr, ListExpr)
+            schema.labels.append(process_label(expr))
     return schema
