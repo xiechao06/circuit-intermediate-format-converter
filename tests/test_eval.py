@@ -8,6 +8,7 @@ from cifconv.cifconv_eval import (
     is_list,
     process_junction,
     process_label,
+    process_no_connect,
     process_pin,
     process_symbol,
     process_symbol_instance,
@@ -735,3 +736,46 @@ def test_process_junction_missing_at():
     assert isinstance(expr, ListExpr)
     with pytest.raises(ValueError, match="Junction is missing position"):
         process_junction(expr)
+
+
+def test_process_no_connect():
+    input_data = """
+    (no_connect
+        (at 100.5 50.25)
+        (uuid "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+    )
+"""
+    tokens = list(kicad_sch_tokenize(input_data))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    no_connect = process_no_connect(expr)
+
+    assert no_connect.x == 100.5
+    assert no_connect.y == 50.25
+    assert no_connect.uuid == "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+
+def test_process_no_connect_missing_uuid():
+    input_data = """
+    (no_connect
+        (at 10 20)
+    )
+"""
+    tokens = list(kicad_sch_tokenize(input_data))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    with pytest.raises(ValueError, match="NoConnect is missing uuid"):
+        process_no_connect(expr)
+
+
+def test_process_no_connect_missing_at():
+    input_data = """
+    (no_connect
+        (uuid "aaa-bbb")
+    )
+"""
+    tokens = list(kicad_sch_tokenize(input_data))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    with pytest.raises(ValueError, match="NoConnect is missing position"):
+        process_no_connect(expr)

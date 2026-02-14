@@ -6,6 +6,7 @@ from cifconv.bus import Bus
 from cifconv.expr import AtomExpr, Expr, ListExpr
 from cifconv.junction import Junction
 from cifconv.label import Label
+from cifconv.noconnect import NoConnect
 from cifconv.pin import Pin, PinType
 from cifconv.schema import Schema
 from cifconv.symbol import Symbol
@@ -377,6 +378,44 @@ def process_junction(junction_expr: ListExpr) -> Junction:
     return Junction(x=x, y=y, uuid=uuid)
 
 
+def process_no_connect(no_connect_expr: ListExpr) -> NoConnect:
+    """
+    Process a no_connect expression.
+
+    Parses a no_connect expression per the KiCad schematic file format:
+        (no_connect (at X Y) (uuid "..."))
+
+    Args:
+        no_connect_expr: A list expression representing a no_connect.
+
+    Returns:
+        NoConnect: A NoConnect object with position and uuid.
+
+    Raises:
+        ValueError: If the no_connect is missing position or uuid.
+    """
+    sub_exprs = expect_list(no_connect_expr, "no_connect")
+    uuid = ""
+    x: float | None = None
+    y: float | None = None
+    
+    for sub_expr in sub_exprs:
+        if is_list(sub_expr, "at"):
+            assert isinstance(sub_expr, ListExpr)
+            x = expect_number(sub_expr.sub_exprs[1])
+            y = expect_number(sub_expr.sub_exprs[2])
+        elif is_list(sub_expr, "uuid"):
+            assert isinstance(sub_expr, ListExpr)
+            uuid = expect_str(sub_expr.sub_exprs[1])
+    
+    if uuid == "":
+        raise ValueError("NoConnect is missing uuid")
+    if x is None or y is None:
+        raise ValueError("NoConnect is missing position (at)")
+    
+    return NoConnect(x=x, y=y, uuid=uuid)
+
+
 def cifconv_eval(expr: Expr | None):
     schema = Schema()
     if expr is None:
@@ -402,4 +441,7 @@ def cifconv_eval(expr: Expr | None):
         elif is_list(expr, "junction"):
             assert isinstance(expr, ListExpr)
             schema.junctions.append(process_junction(expr))
+        elif is_list(expr, "no_connect"):
+            assert isinstance(expr, ListExpr)
+            schema.noconnects.append(process_no_connect(expr))
     return schema
