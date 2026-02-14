@@ -2,11 +2,12 @@ from dataclasses import dataclass
 
 
 @dataclass
-class identInst:
+class SymbolInstance:
     uuid: str
-    ref: str
-    ident_ref: str
+    lib_id: str
+    designator: str
     x: float
     y: float
     rotation: float = 0
+    attributes: dict[str, str] | None = None
     description: str | None = None

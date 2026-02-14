@@ -45,5 +45,5 @@ def main():
     with open(args.input_file, "r") as f:
         input_data = f.read()
         schema = cifconv_eval(read_expr(kicad_sch_tokenize(input_data)))
-        print([symbol.name for symbol in schema.symbols])
+        print([symbol.lib_id for symbol in schema.symbols])
         print(schema.symbols[0].pins)

@@ -84,7 +84,7 @@
             "attributes": {
                 "Value": "STM32F103C8T6",
                 "Firmware": "v1.0.hex",
-                "description": "",
+                "description": ""
             }
         }
     ],

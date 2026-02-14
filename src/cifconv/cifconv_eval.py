@@ -6,6 +6,7 @@ from cifconv.expr import AtomExpr, Expr, ListExpr
 from cifconv.pin import Pin, PinType
 from cifconv.schema import Schema
 from cifconv.symbol import Symbol
+from cifconv.symbol_instance import SymbolInstance
 
 
 def expect_list(expr: Expr, first_token_value: str) -> list[Expr]:
@@ -59,11 +60,8 @@ def process_symbol(symbol_expr: ListExpr):
     id = expect_str(sub_exprs[0])
     logger.debug(f"Processing symbol with id: {id}")
     type_: str | None = None
-    name: str = ""
     if ":" in id:
-        type_, name = id.split(":", 1)
-    else:
-        name = id
+        type_, _ = id.split(":", 1)
 
     ref = ""
     footprint: str | None = None
@@ -87,7 +85,7 @@ def process_symbol(symbol_expr: ListExpr):
             pins.extend(collect_pins(ident_name, sub_expr))
 
     return Symbol(
-        name=name,
+        lib_id=id,
         type=type_,
         ref=ref,
         pins=pins,
@@ -157,6 +155,56 @@ def is_list(expr: Expr, first_token_value: str) -> bool:
         isinstance(first_token, AtomExpr)
         and first_token.value.type == first_token.value.type.IDENT
         and first_token.value.value == first_token_value
+    )
+
+
+def process_symbol_instance(symbol_instance_expr: ListExpr) -> SymbolInstance:
+    sub_exprs = expect_list(symbol_instance_expr, "symbol")
+
+    lib_id = ""
+    uuid = ""
+    designator = ""
+    x: float | None = None
+    y: float | None = None
+    rotation: float = 0
+    attributes: dict[str, str] = {}
+    for sub_expr in sub_exprs:
+        if is_list(sub_expr, "lib_id"):
+            assert isinstance(sub_expr, ListExpr)
+            lib_id = expect_str(sub_expr.sub_exprs[1])
+        elif is_list(sub_expr, "uuid"):
+            assert isinstance(sub_expr, ListExpr)
+            uuid = expect_str(sub_expr.sub_exprs[1])
+        elif is_list(sub_expr, "property"):
+            assert isinstance(sub_expr, ListExpr)
+            property_key = expect_str(sub_expr.sub_exprs[1])
+            property_value = expect_str(sub_expr.sub_exprs[2])
+            if property_key == "Reference":
+                designator = property_value
+            attributes[property_key] = property_value
+        elif is_list(sub_expr, "at"):
+            assert isinstance(sub_expr, ListExpr)
+            x = expect_number(sub_expr.sub_exprs[1])
+            y = expect_number(sub_expr.sub_exprs[2])
+            if len(sub_expr.sub_exprs) > 3:
+                rotation = expect_number(sub_expr.sub_exprs[3])
+    if uuid == "":
+        raise ValueError("Symbol instance is missing uuid")
+    if lib_id == "":
+        raise ValueError("Symbol instance is missing lib_id")
+    if designator == "":
+        raise ValueError("Symbol instance is missing Reference property")
+    if x is None or y is None:
+        raise ValueError("Symbol instance is missing at property")
+
+    return SymbolInstance(
+        uuid=uuid,
+        lib_id=lib_id,
+        designator=designator,
+        x=x,
+        y=y,
+        rotation=rotation,
+        attributes=attributes,
     )
 
 

@@ -8,6 +8,7 @@ from cifconv.cifconv_eval import (
     is_list,
     process_pin,
     process_symbol,
+    process_symbol_instance,
 )
 from cifconv.expr import ListExpr
 from cifconv.kicad_schematic_tokenizer import kicad_sch_tokenize
@@ -365,7 +366,7 @@ def test_process_symbol():
     expr = read_expr(t for t in tokens)
     assert isinstance(expr, ListExpr)
     symbol = process_symbol(expr)
-    assert symbol.name == "Micro_SD_Card_Det1"
+    assert symbol.lib_id == "Connector:Micro_SD_Card_Det1"
     assert symbol.type == "Connector"
     assert symbol.ref == "J"
     assert symbol.package == "footprint"
@@ -450,3 +451,121 @@ def test_process_symbol():
     assert pin.rel_y == -12.7
     assert pin.rotation == 0
     assert pin.id == "Micro_SD_Card_Det1_1_1:9"
+
+
+def test_process_symbol_instance():
+    input_data = """
+(symbol
+    (lib_id "Connector_Generic:Conn_01x09")
+    (at 66.04 93.98 270)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (fields_autoplaced yes)
+    (uuid "02450218-5adf-4bf1-8fee-f81b71280256")
+    (property "Reference" "J3"
+        (at 66.04 97.79 90)
+        (effects
+            (font
+                (size 1.27 1.27)
+            )
+        )
+    )
+    (property "Value" "Conn_01x09"
+        (at 66.04 100.33 90)
+        (effects
+            (font
+                (size 1.27 1.27)
+            )
+        )
+    )
+    (property "Footprint" "Connector_FFC-FPC:TE_0-1734839-9_1x09-1MP_P0.5mm_Horizontal"
+        (at 66.04 93.98 0)
+        (effects
+            (font
+                (size 1.27 1.27)
+            )
+            (hide yes)
+        )
+    )
+    (property "Datasheet" "~"
+        (at 66.04 93.98 0)
+        (effects
+            (font
+                (size 1.27 1.27)
+            )
+            (hide yes)
+        )
+    )
+    (property "Description" "Generic connector, single row, 01x09, script generated (kicad-library-utils/schlib/autogen/connector/)"
+        (at 66.04 93.98 0)
+        (effects
+            (font
+                (size 1.27 1.27)
+            )
+            (hide yes)
+        )
+    )
+    (pin "4"
+        (uuid "2ccd2220-9a06-47c9-90c3-970ab2dac82f")
+    )
+    (pin "5"
+        (uuid "52a1baa9-650d-49f0-9836-4155733d74d1")
+    )
+    (pin "6"
+        (uuid "94b1007a-5641-43c9-b1e3-bad870f511c9")
+    )
+    (pin "7"
+        (uuid "3606f00d-7456-4608-b27e-c3d17bd862b0")
+    )
+    (pin "8"
+        (uuid "6dfac76a-7962-421d-a69b-ebfe93098606")
+    )
+    (pin "9"
+        (uuid "1722b38f-529f-4909-a0c9-598ba8991645")
+    )
+    (pin "1"
+        (uuid "894003e2-065f-43d9-a3ec-023da06229d9")
+    )
+    (pin "2"
+        (uuid "90faf26b-71a8-4153-afe7-a07c38f822ed")
+    )
+    (pin "3"
+        (uuid "9432e83a-d69b-466f-99f6-7821a304bfb5")
+    )
+    (instances
+        (project ""
+            (path "/6bdfbe6c-bf58-4ff9-82c4-7d07673f6195"
+                (reference "J3")
+                (unit 1)
+            )
+        )
+    )
+)
+"""
+    tokens = list(kicad_sch_tokenize(input_data))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    symbol_instance = process_symbol_instance(expr)
+
+    assert symbol_instance.uuid == "02450218-5adf-4bf1-8fee-f81b71280256"
+    assert symbol_instance.lib_id == "Connector_Generic:Conn_01x09"
+    assert symbol_instance.designator == "J3"
+
+    assert symbol_instance.x == 66.04
+    assert symbol_instance.y == 93.98
+    assert symbol_instance.rotation == 270
+    assert symbol_instance.attributes is not None
+    assert (
+        symbol_instance.attributes["Description"]
+        == "Generic connector, single row, 01x09, script generated (kicad-library-utils/schlib/autogen/connector/)"
+    )
+    assert (
+        symbol_instance.attributes["Footprint"]
+        == "Connector_FFC-FPC:TE_0-1734839-9_1x09-1MP_P0.5mm_Horizontal"
+    )
+    assert symbol_instance.attributes["Value"] == "Conn_01x09"
+    assert symbol_instance.attributes["Reference"] == "J3"
+    assert symbol_instance.attributes["Datasheet"] == "~"
