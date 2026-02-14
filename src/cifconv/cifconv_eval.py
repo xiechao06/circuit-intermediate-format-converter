@@ -54,10 +54,10 @@ def expect_ident(expr: Expr) -> str:
     return expr.value.value
 
 
-def process_symbol(ident_expr: ListExpr):
-    sub_exprs = expect_list(ident_expr, "ident")
+def process_symbol(symbol_expr: ListExpr):
+    sub_exprs = expect_list(symbol_expr, "symbol")
     id = expect_str(sub_exprs[0])
-    logger.debug(f"Processing ident with id: {id}")
+    logger.debug(f"Processing symbol with id: {id}")
     type_: str | None = None
     name: str = ""
     if ":" in id:
@@ -68,6 +68,7 @@ def process_symbol(ident_expr: ListExpr):
     ref = ""
     footprint: str | None = None
     pins: list[Pin] = []
+    description: str | None = None
     for sub_expr in sub_exprs[1:]:
         if is_list(sub_expr, "property"):
             # extract property
@@ -78,7 +79,9 @@ def process_symbol(ident_expr: ListExpr):
                 ref = property_value
             elif property_key == "Footprint":
                 footprint = property_value
-        if is_list(sub_expr, "ident"):
+            elif property_key == "Description":
+                description = property_value
+        if is_list(sub_expr, "symbol"):
             assert isinstance(sub_expr, ListExpr)
             ident_name = expect_str(sub_expr.sub_exprs[1])
             pins.extend(collect_pins(ident_name, sub_expr))
@@ -89,6 +92,7 @@ def process_symbol(ident_expr: ListExpr):
         ref=ref,
         pins=pins,
         package=footprint,
+        description=description,
     )
 
 

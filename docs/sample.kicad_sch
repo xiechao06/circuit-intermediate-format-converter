@@ -17,7 +17,7 @@
                     )
                 )
             )
-            (property "Value" "Micro_SD_Card_Det1"
+            (property "Value" "MiConnector:cro_SD_Card_Det1"
                 (at 16.51 17.78 0)
                 (effects
                     (font

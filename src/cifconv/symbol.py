@@ -10,3 +10,4 @@ class Symbol:
     ref: str
     pins: list[Pin]
     package: str | None
+    description: str | None = None
