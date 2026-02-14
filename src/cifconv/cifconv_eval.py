@@ -7,6 +7,7 @@ from cifconv.pin import Pin, PinType
 from cifconv.schema import Schema
 from cifconv.symbol import Symbol
 from cifconv.symbol_instance import SymbolInstance
+from cifconv.wire import Wire
 
 
 def expect_list(expr: Expr, first_token_value: str) -> list[Expr]:
@@ -208,8 +209,30 @@ def process_symbol_instance(symbol_instance_expr: ListExpr) -> SymbolInstance:
     )
 
 
+def process_wire(wire_expr: ListExpr):
+    sub_exprs = expect_list(wire_expr, "wire")
+    wire_id = ""
+    points: list[tuple[float, float]] = []
+    for sub_expr in sub_exprs:
+        if is_list(sub_expr, "uuid"):
+            assert isinstance(sub_expr, ListExpr)
+            wire_id = expect_str(sub_expr.sub_exprs[1])
+        elif is_list(sub_expr, "pts"):
+            assert isinstance(sub_expr, ListExpr)
+            for pt_expr in sub_expr.sub_exprs[1:]:
+                assert isinstance(pt_expr, ListExpr)
+                x = expect_number(pt_expr.sub_exprs[1])
+                y = expect_number(pt_expr.sub_exprs[2])
+                points.append((x, y))
+    if wire_id == "":
+        raise ValueError("Wire is missing uuid")
+    if len(points) < 2:
+        raise ValueError("Wire must have at least 2 segments")
+    return Wire(wire_id=wire_id, points=points, connected_pins=[])
+
+
 def cifconv_eval(expr: Expr | None):
-    schema = Schema(symbols=[], instances=[])
+    schema = Schema()
     if expr is None:
         return schema
     for expr in eat_header(expr):
@@ -221,5 +244,8 @@ def cifconv_eval(expr: Expr | None):
         elif is_list(expr, "symbol"):
             assert isinstance(expr, ListExpr)
             schema.instances.append(process_symbol_instance(expr))
+        elif is_list(expr, "wire"):
+            assert isinstance(expr, ListExpr)
+            schema.wires.append(process_wire(expr))
 
     return schema

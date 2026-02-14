@@ -1,10 +1,9 @@
-from dataclasses import dataclass
-
 from cifconv.symbol import Symbol
 from cifconv.symbol_instance import SymbolInstance
+from cifconv.wire import Wire
 
 
-@dataclass
 class Schema:
-    symbols: list[Symbol]
-    instances: list[SymbolInstance]
+    symbols: list[Symbol] = []
+    instances: list[SymbolInstance] = []
+    wires: list[Wire] = []

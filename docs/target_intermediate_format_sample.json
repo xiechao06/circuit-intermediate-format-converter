@@ -88,7 +88,7 @@
             }
         }
     ],
-    "wires": [ //只记录画线的事实
+    "wires": [
         {
             "wire_id": "wire_xx",
             "segments": [
@@ -113,7 +113,7 @@
                 {
                     "ref": "U2",
                     "pin": "11"
-                },
+                }
             ]
         }
     ],
@@ -147,7 +147,7 @@
                 {
                     "ref": "U3",
                     "pin": "1"
-                },
+                }
             ]
         }
     ],
@@ -186,9 +186,9 @@
                 "TX",
                 "RX"
             ]
-        },
+        }
     ],
-    "modules": [ // 依赖顾老师
+    "modules": [
         {
             "module_id": "module_xxx",
             "role": "controller",
