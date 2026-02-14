@@ -2,10 +2,10 @@ from dataclasses import dataclass
 
 
 @dataclass
-class SymbolInst:
+class identInst:
     uuid: str
     ref: str
-    symbol_ref: str
+    ident_ref: str
     x: float
     y: float
     rotation: float = 0

@@ -11,7 +11,7 @@ def test_rparen():
 
 
 def test_atom():
-    tokens = [Token(TokenType.SYMBOL, "symbol_name", 1, 1)]
+    tokens = [Token(TokenType.IDENT, "ident_name", 1, 1)]
     expr = read_expr((t for t in tokens))
     assert isinstance(expr, AtomExpr)
     assert expr.value == tokens[0]
@@ -20,7 +20,7 @@ def test_atom():
 def test_list():
     tokens = [
         Token(TokenType.LPAREN, "(", 1, 1),
-        Token(TokenType.SYMBOL, "symbol_name", 1, 2),
+        Token(TokenType.IDENT, "ident_name", 1, 2),
         Token(TokenType.RPAREN, ")", 1, 3),
     ]
     expr = read_expr((t for t in tokens))
@@ -34,9 +34,9 @@ def test_nested_list():
     # (outer (inner 1 2 3))
     tokens = [
         Token(TokenType.LPAREN, "(", 1, 1),
-        Token(TokenType.SYMBOL, "outer", 1, 2),
+        Token(TokenType.IDENT, "outer", 1, 2),
         Token(TokenType.LPAREN, "(", 1, 3),
-        Token(TokenType.SYMBOL, "inner", 1, 4),
+        Token(TokenType.IDENT, "inner", 1, 4),
         Token(TokenType.NUMBER, "1", 1, 5),
         Token(TokenType.NUMBER, "2", 1, 6),
         Token(TokenType.NUMBER, "3", 1, 7),

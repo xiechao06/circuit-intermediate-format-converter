@@ -13,7 +13,7 @@ def kicad_sch_tokenize(input_data: str):
 
     The tokenizer yields Token instances with type, value, column, and line
     information. It recognizes parentheses, quoted strings (with basic escape
-    handling), numbers (including negative and decimal forms), and symbols, while
+    handling), numbers (including negative and decimal forms), and idents, while
     skipping whitespace and tracking line/column positions.
     """
     i = 0
@@ -69,7 +69,7 @@ def kicad_sch_tokenize(input_data: str):
                 and input_data[i] not in '()"'
             ):
                 i += 1
-            yield Token(TokenType.SYMBOL, input_data[start:i], col, line)
+            yield Token(TokenType.IDENT, input_data[start:i], col, line)
             col += i - start
 
 

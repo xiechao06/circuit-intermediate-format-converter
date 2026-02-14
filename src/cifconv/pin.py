@@ -21,7 +21,7 @@ PinType = Literal[
 class Pin:
     id: str
     name: str
-    # see https://dev-docs.kicad.org/en/file-formats/sexpr-intro/index.html#_symbol_pin
+    # see https://dev-docs.kicad.org/en/file-formats/sexpr-intro/index.html#_ident_pin
     type: PinType | None
     rel_x: float
     rel_y: float

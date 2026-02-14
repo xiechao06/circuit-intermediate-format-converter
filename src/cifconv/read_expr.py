@@ -43,7 +43,7 @@ def read_expr(tokens: Generator[Token, None, None]) -> Expr | None:
 
 
 if __name__ == "__main__":
-    input_data = """(symbol "R" (lib_id "Device:R") (at 0 0) (unit 1)
+    input_data = """(ident "R" (lib_id "Device:R") (at 0 0) (unit 1)
   (property "Reference" "R1" (id 0) (at 0 0) (layer "F.SilkS"))
   (property "Value" "10k" (id 1) (at 0 0) (layer "F.SilkS"))
   (property "Footprint" "Resistor_SMD:R_0805" (id 2) (at 0 0) (layer "F.SilkS"))

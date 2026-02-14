@@ -6,7 +6,7 @@ class TokenType(Enum):
     LPAREN = auto()
     RPAREN = auto()
     STRING = auto()
-    SYMBOL = auto()
+    IDENT = auto()
     NUMBER = auto()
 
 
