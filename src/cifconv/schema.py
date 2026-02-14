@@ -1,4 +1,5 @@
 from cifconv.bus import Bus
+from cifconv.junction import Junction
 from cifconv.label import Label
 from cifconv.symbol import Symbol
 from cifconv.symbol_instance import SymbolInstance
@@ -11,3 +12,4 @@ class Schema:
     wires: list[Wire] = []
     buses: list[Bus] = []
     labels: list[Label] = []
+    junctions: list[Junction] = []

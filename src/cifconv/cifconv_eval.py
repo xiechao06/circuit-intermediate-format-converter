@@ -4,6 +4,7 @@ from loguru import logger
 
 from cifconv.bus import Bus
 from cifconv.expr import AtomExpr, Expr, ListExpr
+from cifconv.junction import Junction
 from cifconv.label import Label
 from cifconv.pin import Pin, PinType
 from cifconv.schema import Schema
@@ -338,6 +339,44 @@ def process_label(label_expr: ListExpr) -> Label:
     return Label(text=text, x=x, y=y, rotation=rotation, uuid=uuid)
 
 
+def process_junction(junction_expr: ListExpr) -> Junction:
+    """
+    Process a junction expression.
+
+    Parses a junction expression per the KiCad schematic file format:
+        (junction (at X Y) (diameter DIA) (color R G B A) (uuid "..."))
+
+    Args:
+        junction_expr: A list expression representing a junction.
+
+    Returns:
+        Junction: A Junction object with position and uuid.
+
+    Raises:
+        ValueError: If the junction is missing position or uuid.
+    """
+    sub_exprs = expect_list(junction_expr, "junction")
+    uuid = ""
+    x: float | None = None
+    y: float | None = None
+    
+    for sub_expr in sub_exprs:
+        if is_list(sub_expr, "at"):
+            assert isinstance(sub_expr, ListExpr)
+            x = expect_number(sub_expr.sub_exprs[1])
+            y = expect_number(sub_expr.sub_exprs[2])
+        elif is_list(sub_expr, "uuid"):
+            assert isinstance(sub_expr, ListExpr)
+            uuid = expect_str(sub_expr.sub_exprs[1])
+    
+    if uuid == "":
+        raise ValueError("Junction is missing uuid")
+    if x is None or y is None:
+        raise ValueError("Junction is missing position (at)")
+    
+    return Junction(x=x, y=y, uuid=uuid)
+
+
 def cifconv_eval(expr: Expr | None):
     schema = Schema()
     if expr is None:
@@ -360,4 +399,7 @@ def cifconv_eval(expr: Expr | None):
         elif is_list(expr, "label"):
             assert isinstance(expr, ListExpr)
             schema.labels.append(process_label(expr))
+        elif is_list(expr, "junction"):
+            assert isinstance(expr, ListExpr)
+            schema.junctions.append(process_junction(expr))
     return schema
