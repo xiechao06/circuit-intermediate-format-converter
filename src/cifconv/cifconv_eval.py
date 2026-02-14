@@ -2,6 +2,7 @@ from typing import cast
 
 from loguru import logger
 
+from cifconv.bus import Bus
 from cifconv.expr import AtomExpr, Expr, ListExpr
 from cifconv.pin import Pin, PinType
 from cifconv.schema import Schema
@@ -210,13 +211,36 @@ def process_symbol_instance(symbol_instance_expr: ListExpr) -> SymbolInstance:
 
 
 def process_wire(wire_expr: ListExpr):
+    """
+    Process a wire expression and extract its properties.
+
+    This function parses a wire expression to extract the UUID and list of points
+    that define the wire's path. It validates that the wire has a UUID and at least
+    2 points (to form at least 1 segment).
+
+    Args:
+        wire_expr (ListExpr): A list expression representing a wire with the structure:
+            (wire (uuid <uuid-string>) (pts (pt <x1> <y1>) (pt <x2> <y2>) ...))
+
+    Returns:
+        Wire: A Wire object containing:
+            - uuid (str): The unique identifier of the wire
+            - points (list[tuple[float, float]]): A list of (x, y) coordinate pairs
+              defining the wire's path
+            - connected_pins (list): An empty list (to be populated later)
+
+    Raises:
+        ValueError: If the wire is missing a UUID or has fewer than 2 points
+        AssertionError: If the expression structure is malformed or contains
+            unexpected data types
+    """
     sub_exprs = expect_list(wire_expr, "wire")
-    wire_id = ""
+    uuid = ""
     points: list[tuple[float, float]] = []
     for sub_expr in sub_exprs:
         if is_list(sub_expr, "uuid"):
             assert isinstance(sub_expr, ListExpr)
-            wire_id = expect_str(sub_expr.sub_exprs[1])
+            uuid = expect_str(sub_expr.sub_exprs[1])
         elif is_list(sub_expr, "pts"):
             assert isinstance(sub_expr, ListExpr)
             for pt_expr in sub_expr.sub_exprs[1:]:
@@ -224,11 +248,54 @@ def process_wire(wire_expr: ListExpr):
                 x = expect_number(pt_expr.sub_exprs[1])
                 y = expect_number(pt_expr.sub_exprs[2])
                 points.append((x, y))
-    if wire_id == "":
+    if uuid == "":
         raise ValueError("Wire is missing uuid")
     if len(points) < 2:
         raise ValueError("Wire must have at least 2 segments")
-    return Wire(wire_id=wire_id, points=points, connected_pins=[])
+    return Wire(uuid=uuid, points=points, connected_pins=[])
+
+
+def process_bus(bus_expr: ListExpr):
+    """
+    Process a bus expression and create a Bus object.
+
+    Extracts UUID and points from a bus list expression and validates that
+    the bus has a UUID and at least 2 points (segments).
+
+    Args:
+        bus_expr (ListExpr): A list expression containing bus data with 'uuid'
+                           and 'pts' sub-expressions.
+
+    Returns:
+        Bus: A Bus object with the extracted UUID, points, and an empty list
+              of connected pins.
+
+    Raises:
+        ValueError: If the bus is missing a UUID or has fewer than 2 points.
+        AssertionError: If sub-expressions are not of the expected type (ListExpr).
+
+    Note: Buses share the same structure as wires, but they may be treated differently
+      in later processing stages based on their intended use in the circuit design.
+    """
+    sub_exprs = expect_list(bus_expr, "bus")
+    uuid = ""
+    points: list[tuple[float, float]] = []
+    for sub_expr in sub_exprs:
+        if is_list(sub_expr, "uuid"):
+            assert isinstance(sub_expr, ListExpr)
+            uuid = expect_str(sub_expr.sub_exprs[1])
+        elif is_list(sub_expr, "pts"):
+            assert isinstance(sub_expr, ListExpr)
+            for pt_expr in sub_expr.sub_exprs[1:]:
+                assert isinstance(pt_expr, ListExpr)
+                x = expect_number(pt_expr.sub_exprs[1])
+                y = expect_number(pt_expr.sub_exprs[2])
+                points.append((x, y))
+    if uuid == "":
+        raise ValueError("Bus is missing uuid")
+    if len(points) < 2:
+        raise ValueError("Bus must have at least 2 segments")
+    return Bus(uuid=uuid, points=points, connected_pins=[])
 
 
 def cifconv_eval(expr: Expr | None):
@@ -247,5 +314,7 @@ def cifconv_eval(expr: Expr | None):
         elif is_list(expr, "wire"):
             assert isinstance(expr, ListExpr)
             schema.wires.append(process_wire(expr))
-
+        elif is_list(expr, "bus"):
+            assert isinstance(expr, ListExpr)
+            schema.wires.append(process_bus(expr))
     return schema

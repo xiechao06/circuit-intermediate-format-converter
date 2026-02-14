@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class Wire:
+class Bus:
     uuid: str
     points: list[
         tuple[float, float]

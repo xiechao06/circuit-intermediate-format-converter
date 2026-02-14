@@ -9,6 +9,7 @@ from cifconv.cifconv_eval import (
     process_pin,
     process_symbol,
     process_symbol_instance,
+    process_wire,
 )
 from cifconv.expr import ListExpr
 from cifconv.kicad_schematic_tokenizer import kicad_sch_tokenize
@@ -571,26 +572,26 @@ def test_process_symbol_instance():
     assert symbol_instance.attributes["Datasheet"] == "~"
 
 
-# def test_process_wire():
-#     input_data = """
-#     (wire
-#         (pts
-#             (xy 69.85 115.57) (xy 69.85 130.81)
-#         )
-#         (stroke
-#             (width 0)
-#             (type default)
-#         )
-#         (uuid "05c18f37-f35e-48ba-868c-337da2308d7c")
-#     )
-# """
+def test_process_wire():
+    input_data = """
+    (wire
+        (pts
+            (xy 69.85 115.57) (xy 69.85 130.81)
+        )
+        (stroke
+            (width 0)
+            (type default)
+        )
+        (uuid "05c18f37-f35e-48ba-868c-337da2308d7c")
+    )
+"""
 
-#     tokens = list(kicad_sch_tokenize(input_data))
-#     expr = read_expr(t for t in tokens)
-#     assert isinstance(expr, ListExpr)
-#     wire = process_wire(expr)
+    tokens = list(kicad_sch_tokenize(input_data))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    wire = process_wire(expr)
 
-#     assert wire.wire_id == "05c18f37-f35e-48ba-868c-337da2308d7c"
-#     assert len(wire.points) == 2
-#     assert wire.points[0] == (69.85, 115.57)
-#     assert wire.points[1] == (69.85, 130.81)
+    assert wire.uuid == "05c18f37-f35e-48ba-868c-337da2308d7c"
+    assert len(wire.points) == 2
+    assert wire.points[0] == (69.85, 115.57)
+    assert wire.points[1] == (69.85, 130.81)
