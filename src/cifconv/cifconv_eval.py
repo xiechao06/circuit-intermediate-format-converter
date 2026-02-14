@@ -3,6 +3,7 @@ from typing import cast
 from loguru import logger
 
 from cifconv.bus import Bus
+from cifconv.bus_entry import BusEntry
 from cifconv.expr import AtomExpr, Expr, ListExpr
 from cifconv.junction import Junction
 from cifconv.label import Label
@@ -416,6 +417,50 @@ def process_no_connect(no_connect_expr: ListExpr) -> NoConnect:
     return NoConnect(x=x, y=y, uuid=uuid)
 
 
+def process_bus_entry(bus_entry_expr: ListExpr) -> BusEntry:
+    """
+    Process a bus_entry expression.
+
+    Parses a bus_entry expression per the KiCad schematic file format:
+        (bus_entry (at X Y) (size X Y) (stroke ...) (uuid "..."))
+
+    Args:
+        bus_entry_expr: A list expression representing a bus_entry.
+
+    Returns:
+        BusEntry: A BusEntry object with position, size, and uuid.
+
+    Raises:
+        ValueError: If the bus_entry is missing required fields.
+    """
+    sub_exprs = expect_list(bus_entry_expr, "bus_entry")
+    uuid = ""
+    x: float | None = None
+    y: float | None = None
+    size_x: float = 0  # Default to 0
+    size_y: float = 0  # Default to 0
+    
+    for sub_expr in sub_exprs:
+        if is_list(sub_expr, "at"):
+            assert isinstance(sub_expr, ListExpr)
+            x = expect_number(sub_expr.sub_exprs[1])
+            y = expect_number(sub_expr.sub_exprs[2])
+        elif is_list(sub_expr, "size"):
+            assert isinstance(sub_expr, ListExpr)
+            size_x = expect_number(sub_expr.sub_exprs[1])
+            size_y = expect_number(sub_expr.sub_exprs[2])
+        elif is_list(sub_expr, "uuid"):
+            assert isinstance(sub_expr, ListExpr)
+            uuid = expect_str(sub_expr.sub_exprs[1])
+    
+    if uuid == "":
+        raise ValueError("BusEntry is missing uuid")
+    if x is None or y is None:
+        raise ValueError("BusEntry is missing position (at)")
+    
+    return BusEntry(x=x, y=y, size_x=size_x, size_y=size_y, uuid=uuid)
+
+
 def cifconv_eval(expr: Expr | None):
     schema = Schema()
     if expr is None:
@@ -444,4 +489,7 @@ def cifconv_eval(expr: Expr | None):
         elif is_list(expr, "no_connect"):
             assert isinstance(expr, ListExpr)
             schema.noconnects.append(process_no_connect(expr))
+        elif is_list(expr, "bus_entry"):
+            assert isinstance(expr, ListExpr)
+            schema.bus_entries.append(process_bus_entry(expr))
     return schema

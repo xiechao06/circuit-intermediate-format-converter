@@ -6,6 +6,7 @@ from cifconv.cifconv_eval import (
     expect_number,
     expect_str,
     is_list,
+    process_bus_entry,
     process_junction,
     process_label,
     process_no_connect,
@@ -779,3 +780,79 @@ def test_process_no_connect_missing_at():
     assert isinstance(expr, ListExpr)
     with pytest.raises(ValueError, match="NoConnect is missing position"):
         process_no_connect(expr)
+
+
+def test_process_bus_entry():
+    input_data = """
+    (bus_entry
+        (at 100.5 50.25)
+        (size 5.0 3.0)
+        (stroke (width 0.1524) (type solid) (color 0 0 0 0))
+        (uuid "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+    )
+"""
+    tokens = list(kicad_sch_tokenize(input_data))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    bus_entry = process_bus_entry(expr)
+
+    assert bus_entry.x == 100.5
+    assert bus_entry.y == 50.25
+    assert bus_entry.size_x == 5.0
+    assert bus_entry.size_y == 3.0
+    assert bus_entry.uuid == "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    
+    # Test getter properties
+    assert bus_entry.start_point == (100.5, 50.25)
+    assert bus_entry.end_point == (105.5, 53.25)
+
+
+def test_process_bus_entry_without_size():
+    input_data = """
+    (bus_entry
+        (at 200 150)
+        (uuid "11111111-2222-3333-4444-555555555555")
+    )
+"""
+    tokens = list(kicad_sch_tokenize(input_data))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    bus_entry = process_bus_entry(expr)
+
+    assert bus_entry.x == 200
+    assert bus_entry.y == 150
+    assert bus_entry.size_x == 0  # Default value
+    assert bus_entry.size_y == 0  # Default value
+    assert bus_entry.uuid == "11111111-2222-3333-4444-555555555555"
+    
+    # Test getter properties with default size
+    assert bus_entry.start_point == (200, 150)
+    assert bus_entry.end_point == (200, 150)  # Same as start when size is 0
+
+
+def test_process_bus_entry_missing_uuid():
+    input_data = """
+    (bus_entry
+        (at 10 20)
+        (size 5 3)
+    )
+"""
+    tokens = list(kicad_sch_tokenize(input_data))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    with pytest.raises(ValueError, match="BusEntry is missing uuid"):
+        process_bus_entry(expr)
+
+
+def test_process_bus_entry_missing_at():
+    input_data = """
+    (bus_entry
+        (size 5 3)
+        (uuid "aaa-bbb")
+    )
+"""
+    tokens = list(kicad_sch_tokenize(input_data))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    with pytest.raises(ValueError, match="BusEntry is missing position"):
+        process_bus_entry(expr)

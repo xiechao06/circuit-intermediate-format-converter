@@ -1,4 +1,5 @@
 from cifconv.bus import Bus
+from cifconv.bus_entry import BusEntry
 from cifconv.junction import Junction
 from cifconv.label import Label
 from cifconv.noconnect import NoConnect
@@ -15,3 +16,4 @@ class Schema:
     labels: list[Label] = []
     junctions: list[Junction] = []
     noconnects: list[NoConnect] = []
+    bus_entries: list[BusEntry] = []
