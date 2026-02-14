@@ -209,14 +209,17 @@ def process_symbol_instance(symbol_instance_expr: ListExpr) -> SymbolInstance:
 
 
 def cifconv_eval(expr: Expr | None):
-    schema = Schema(symbols=[])
+    schema = Schema(symbols=[], instances=[])
     if expr is None:
         return schema
     for expr in eat_header(expr):
-        if is_list(expr, "lib_idents"):
-            ident_exprs = expect_list(expr, "lib_idents")
+        if is_list(expr, "lib_symbols"):
+            ident_exprs = expect_list(expr, "lib_symbols")
             for ident_expr in ident_exprs:
                 assert isinstance(ident_expr, ListExpr)
                 schema.symbols.append(process_symbol(ident_expr))
+        elif is_list(expr, "symbol"):
+            assert isinstance(expr, ListExpr)
+            schema.instances.append(process_symbol_instance(expr))
 
     return schema

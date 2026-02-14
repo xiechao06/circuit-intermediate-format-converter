@@ -1,0 +1,10 @@
+2026-02-14 15:32:13 | DEBUG      | Processing symbol with id: Connector:Micro_SD_Card_Det1
+2026-02-14 15:32:13 | DEBUG      | Processing symbol with id: Connector_Generic:Conn_01x02
+2026-02-14 15:32:13 | DEBUG      | Processing symbol with id: Connector_Generic:Conn_01x09
+2026-02-14 15:32:13 | DEBUG      | Processing symbol with id: Connector_Generic:Conn_02x05_Odd_Even
+2026-02-14 15:32:13 | DEBUG      | Processing symbol with id: power:GND
+2026-02-14 15:32:33 | DEBUG      | Processing symbol with id: Connector:Micro_SD_Card_Det1
+2026-02-14 15:32:33 | DEBUG      | Processing symbol with id: Connector_Generic:Conn_01x02
+2026-02-14 15:32:33 | DEBUG      | Processing symbol with id: Connector_Generic:Conn_01x09
+2026-02-14 15:32:33 | DEBUG      | Processing symbol with id: Connector_Generic:Conn_02x05_Odd_Even
+2026-02-14 15:32:33 | DEBUG      | Processing symbol with id: power:GND
