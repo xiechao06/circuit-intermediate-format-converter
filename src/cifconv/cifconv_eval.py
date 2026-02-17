@@ -9,6 +9,7 @@ from cifconv.junction import Junction
 from cifconv.label import Label
 from cifconv.noconnect import NoConnect
 from cifconv.pin import Pin, PinType
+from cifconv.point import Point
 from cifconv.schema import Schema
 from cifconv.symbol import Symbol
 from cifconv.symbol_instance import SymbolInstance
@@ -229,7 +230,7 @@ def process_wire(wire_expr: ListExpr):
     Returns:
         Wire: A Wire object containing:
             - uuid (str): The unique identifier of the wire
-            - points (list[tuple[float, float]]): A list of (x, y) coordinate pairs
+            - points (list[Point]): A list of Point objects defining the wire's path
               defining the wire's path
             - connected_pins (list): An empty list (to be populated later)
 
@@ -240,7 +241,7 @@ def process_wire(wire_expr: ListExpr):
     """
     sub_exprs = expect_list(wire_expr, "wire")
     uuid = ""
-    points: list[tuple[float, float]] = []
+    points: list[Point] = []
     for sub_expr in sub_exprs:
         if is_list(sub_expr, "uuid"):
             assert isinstance(sub_expr, ListExpr)
@@ -251,7 +252,7 @@ def process_wire(wire_expr: ListExpr):
                 assert isinstance(pt_expr, ListExpr)
                 x = expect_number(pt_expr.sub_exprs[1])
                 y = expect_number(pt_expr.sub_exprs[2])
-                points.append((x, y))
+                points.append(Point(x, y))
     if uuid == "":
         raise ValueError("Wire is missing uuid")
     if len(points) < 2:
@@ -283,7 +284,7 @@ def process_bus(bus_expr: ListExpr):
     """
     sub_exprs = expect_list(bus_expr, "bus")
     uuid = ""
-    points: list[tuple[float, float]] = []
+    points: list[Point] = []
     for sub_expr in sub_exprs:
         if is_list(sub_expr, "uuid"):
             assert isinstance(sub_expr, ListExpr)
@@ -294,7 +295,7 @@ def process_bus(bus_expr: ListExpr):
                 assert isinstance(pt_expr, ListExpr)
                 x = expect_number(pt_expr.sub_exprs[1])
                 y = expect_number(pt_expr.sub_exprs[2])
-                points.append((x, y))
+                points.append(Point(x, y))
     if uuid == "":
         raise ValueError("Bus is missing uuid")
     if len(points) < 2:
@@ -361,7 +362,7 @@ def process_junction(junction_expr: ListExpr) -> Junction:
     uuid = ""
     x: float | None = None
     y: float | None = None
-    
+
     for sub_expr in sub_exprs:
         if is_list(sub_expr, "at"):
             assert isinstance(sub_expr, ListExpr)
@@ -370,12 +371,12 @@ def process_junction(junction_expr: ListExpr) -> Junction:
         elif is_list(sub_expr, "uuid"):
             assert isinstance(sub_expr, ListExpr)
             uuid = expect_str(sub_expr.sub_exprs[1])
-    
+
     if uuid == "":
         raise ValueError("Junction is missing uuid")
     if x is None or y is None:
         raise ValueError("Junction is missing position (at)")
-    
+
     return Junction(x=x, y=y, uuid=uuid)
 
 
@@ -399,7 +400,7 @@ def process_no_connect(no_connect_expr: ListExpr) -> NoConnect:
     uuid = ""
     x: float | None = None
     y: float | None = None
-    
+
     for sub_expr in sub_exprs:
         if is_list(sub_expr, "at"):
             assert isinstance(sub_expr, ListExpr)
@@ -408,12 +409,12 @@ def process_no_connect(no_connect_expr: ListExpr) -> NoConnect:
         elif is_list(sub_expr, "uuid"):
             assert isinstance(sub_expr, ListExpr)
             uuid = expect_str(sub_expr.sub_exprs[1])
-    
+
     if uuid == "":
         raise ValueError("NoConnect is missing uuid")
     if x is None or y is None:
         raise ValueError("NoConnect is missing position (at)")
-    
+
     return NoConnect(x=x, y=y, uuid=uuid)
 
 
@@ -439,7 +440,7 @@ def process_bus_entry(bus_entry_expr: ListExpr) -> BusEntry:
     y: float | None = None
     size_x: float = 0  # Default to 0
     size_y: float = 0  # Default to 0
-    
+
     for sub_expr in sub_exprs:
         if is_list(sub_expr, "at"):
             assert isinstance(sub_expr, ListExpr)
@@ -452,12 +453,12 @@ def process_bus_entry(bus_entry_expr: ListExpr) -> BusEntry:
         elif is_list(sub_expr, "uuid"):
             assert isinstance(sub_expr, ListExpr)
             uuid = expect_str(sub_expr.sub_exprs[1])
-    
+
     if uuid == "":
         raise ValueError("BusEntry is missing uuid")
     if x is None or y is None:
         raise ValueError("BusEntry is missing position (at)")
-    
+
     return BusEntry(x=x, y=y, size_x=size_x, size_y=size_y, uuid=uuid)
 
 

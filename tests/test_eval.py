@@ -17,6 +17,7 @@ from cifconv.cifconv_eval import (
 )
 from cifconv.expr import ListExpr
 from cifconv.kicad_schematic_tokenizer import kicad_sch_tokenize
+from cifconv.point import Point
 from cifconv.read_expr import read_expr
 
 
@@ -577,6 +578,8 @@ def test_process_symbol_instance():
 
 
 def test_process_wire():
+    from cifconv.point import Point
+
     input_data = """
     (wire
         (pts
@@ -597,8 +600,8 @@ def test_process_wire():
 
     assert wire.uuid == "05c18f37-f35e-48ba-868c-337da2308d7c"
     assert len(wire.points) == 2
-    assert wire.points[0] == (69.85, 115.57)
-    assert wire.points[1] == (69.85, 130.81)
+    assert wire.points[0] == Point(69.85, 115.57)
+    assert wire.points[1] == Point(69.85, 130.81)
 
 
 def test_process_label():
@@ -801,10 +804,10 @@ def test_process_bus_entry():
     assert bus_entry.size_x == 5.0
     assert bus_entry.size_y == 3.0
     assert bus_entry.uuid == "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-    
+
     # Test getter properties
-    assert bus_entry.start_point == (100.5, 50.25)
-    assert bus_entry.end_point == (105.5, 53.25)
+    assert bus_entry.start_point == Point(100.5, 50.25)
+    assert bus_entry.end_point == Point(105.5, 53.25)
 
 
 def test_process_bus_entry_without_size():
@@ -824,10 +827,10 @@ def test_process_bus_entry_without_size():
     assert bus_entry.size_x == 0  # Default value
     assert bus_entry.size_y == 0  # Default value
     assert bus_entry.uuid == "11111111-2222-3333-4444-555555555555"
-    
+
     # Test getter properties with default size
-    assert bus_entry.start_point == (200, 150)
-    assert bus_entry.end_point == (200, 150)  # Same as start when size is 0
+    assert bus_entry.start_point == Point(200, 150)
+    assert bus_entry.end_point == Point(200, 150)  # Same as start when size is 0
 
 
 def test_process_bus_entry_missing_uuid():
@@ -856,3 +859,272 @@ def test_process_bus_entry_missing_at():
     assert isinstance(expr, ListExpr)
     with pytest.raises(ValueError, match="BusEntry is missing position"):
         process_bus_entry(expr)
+
+
+def test_schema_nets_property():
+    from cifconv.label import Label
+    from cifconv.point import Point
+    from cifconv.schema import Schema
+    from cifconv.wire import Wire
+
+    # Create a simple schema with a wire and a label
+    schema = Schema()
+
+    # Add a wire
+    wire = Wire(
+        uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[]
+    )
+    schema.wires.append(wire)
+
+    # Add a label at the same position as the wire
+    label = Label(text="VCC", x=0, y=0, rotation=0, uuid="label-uuid-1")
+    schema.labels.append(label)
+
+    # The net should be named after the label
+    nets = schema.nets
+    assert len(nets) >= 1  # There should be at least one net
+    assert any(
+        net.name == "VCC" for net in nets
+    )  # At least one net should be named VCC
+
+
+def test_schema_nets_property_unnamed_net():
+    from cifconv.point import Point
+    from cifconv.schema import Schema
+    from cifconv.wire import Wire
+
+    # Create a schema with a wire but no label
+    schema = Schema()
+
+    # Add a wire
+    wire = Wire(
+        uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[]
+    )
+    schema.wires.append(wire)
+
+    # The net should be named with the default naming scheme
+    nets = schema.nets
+    # Since there's only one net and it has no label, it should be named "net_0"
+    assert any(net.name.startswith("net_") for net in nets)
+
+
+def test_schema_nets_property_multiple_connected_elements():
+    from cifconv.junction import Junction
+    from cifconv.label import Label
+    from cifconv.point import Point
+    from cifconv.schema import Schema
+    from cifconv.wire import Wire
+
+    # Create a schema with multiple connected elements
+    schema = Schema()
+
+    # Add two wires that connect at a point
+    wire1 = Wire(
+        uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[]
+    )
+    wire2 = Wire(
+        uuid="wire-uuid-2", points=[Point(10, 0), Point(20, 0)], connected_pins=[]
+    )
+    schema.wires.extend([wire1, wire2])
+
+    # Add a junction at the connection point
+    junction = Junction(x=10, y=0, uuid="junction-uuid-1")
+    schema.junctions.append(junction)
+
+    # Add a label at the connection point
+    label = Label(text="SIGNAL_A", x=10, y=0, rotation=0, uuid="label-uuid-1")
+    schema.labels.append(label)
+
+    # The connected components should form one net named after the label
+    nets = schema.nets
+    assert any(net.name == "SIGNAL_A" for net in nets)
+    assert len(nets) == 1  # Only one net should be formed
+
+
+def test_schema_nets_with_bus_and_bus_entry():
+    from cifconv.bus import Bus
+    from cifconv.bus_entry import BusEntry
+    from cifconv.label import Label
+    from cifconv.point import Point
+    from cifconv.schema import Schema
+    from cifconv.wire import Wire
+
+    # Create a schema with a bus, bus entry, and wire
+    schema = Schema()
+
+    # Add a bus
+    bus = Bus(uuid="bus-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[])
+    schema.buses.append(bus)
+
+    # Add a bus entry that connects to the bus
+    bus_entry = BusEntry(x=10, y=0, size_x=0, size_y=5, uuid="bus-entry-uuid-1")
+    schema.bus_entries.append(bus_entry)
+
+    # Add a wire that connects to the end of the bus entry
+    wire = Wire(
+        uuid="wire-uuid-1", points=[Point(10, 5), Point(20, 5)], connected_pins=[]
+    )
+    schema.wires.append(wire)
+
+    # Add a label at the connection point
+    label = Label(text="BUS_SIGNAL", x=10, y=0, rotation=0, uuid="label-uuid-1")
+    schema.labels.append(label)
+
+    # The connected components should form one net named after the label
+    nets = schema.nets
+    assert len(nets) == 1  # Only one net should be formed
+    assert nets[0].name == "BUS_SIGNAL"  # Named after the label
+    assert len(nets[0].buses) == 1  # Should contain the bus
+    assert len(nets[0].bus_entries) == 1  # Should contain the bus entry
+    assert len(nets[0].wires) == 1  # Should contain the wire
+
+
+def test_schema_nets_with_multiple_buses_connected_via_junction():
+    from cifconv.bus import Bus
+    from cifconv.junction import Junction
+    from cifconv.label import Label
+    from cifconv.point import Point
+    from cifconv.schema import Schema
+
+    # Create a schema with multiple buses connected via a junction
+    schema = Schema()
+
+    # Add first bus
+    bus1 = Bus(uuid="bus-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[])
+    schema.buses.append(bus1)
+
+    # Add second bus
+    bus2 = Bus(
+        uuid="bus-uuid-2", points=[Point(10, 0), Point(20, 0)], connected_pins=[]
+    )
+    schema.buses.append(bus2)
+
+    # Add a junction at the connection point
+    junction = Junction(x=10, y=0, uuid="junction-uuid-1")
+    schema.junctions.append(junction)
+
+    # Add a label at the connection point
+    label = Label(text="MULTI_BUS_NET", x=10, y=0, rotation=0, uuid="label-uuid-1")
+    schema.labels.append(label)
+
+    # The connected buses should form one net named after the label
+    nets = schema.nets
+    assert len(nets) == 1  # Only one net should be formed
+    assert nets[0].name == "MULTI_BUS_NET"  # Named after the label
+    assert len(nets[0].buses) == 2  # Should contain both buses
+    assert len(nets[0].junctions) == 1  # Should contain the junction
+
+
+def test_schema_nets_multiple_separate_networks():
+    from cifconv.bus import Bus
+    from cifconv.label import Label
+    from cifconv.point import Point
+    from cifconv.schema import Schema
+    from cifconv.wire import Wire
+
+    # Create a schema with multiple separate networks
+    schema = Schema()
+
+    # Network 1: A wire with a label
+    wire1 = Wire(
+        uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[]
+    )
+    schema.wires.append(wire1)
+    label1 = Label(text="NET_A", x=0, y=0, rotation=0, uuid="label-uuid-1")
+    schema.labels.append(label1)
+
+    # Network 2: A bus with a label (separate from Network 1)
+    bus1 = Bus(
+        uuid="bus-uuid-1", points=[Point(20, 20), Point(30, 20)], connected_pins=[]
+    )
+    schema.buses.append(bus1)
+    label2 = Label(text="NET_B", x=20, y=20, rotation=0, uuid="label-uuid-2")
+    schema.labels.append(label2)
+
+    # Network 3: A wire without a label (should get auto-generated name)
+    wire2 = Wire(
+        uuid="wire-uuid-2", points=[Point(40, 40), Point(50, 40)], connected_pins=[]
+    )
+    schema.wires.append(wire2)
+
+    # There should be 3 separate nets
+    nets = schema.nets
+    assert len(nets) == 3
+
+    # Check that labeled nets have correct names
+    net_names = [net.name for net in nets]
+    assert "NET_A" in net_names
+    assert "NET_B" in net_names
+
+    # Check that there's a net with an auto-generated name
+    auto_named_nets = [net for net in nets if net.name.startswith("net_")]
+    assert len(auto_named_nets) == 1
+
+
+def test_schema_nets_multiple_connected_components():
+    from cifconv.bus_entry import BusEntry
+    from cifconv.junction import Junction
+    from cifconv.label import Label
+    from cifconv.point import Point
+    from cifconv.schema import Schema
+    from cifconv.wire import Wire
+
+    # Create a schema with multiple connected components
+    schema = Schema()
+
+    # Component 1: Two wires connected by a junction with a label
+    wire1 = Wire(
+        uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[]
+    )
+    wire2 = Wire(
+        uuid="wire-uuid-2", points=[Point(10, 0), Point(20, 0)], connected_pins=[]
+    )
+    junction1 = Junction(x=10, y=0, uuid="junction-uuid-1")
+    label1 = Label(text="POWER_RAIL", x=10, y=0, rotation=0, uuid="label-uuid-1")
+
+    schema.wires.extend([wire1, wire2])
+    schema.junctions.append(junction1)
+    schema.labels.append(label1)
+
+    # Component 2: A bus entry and wire with a different label
+    bus_entry = BusEntry(x=30, y=30, size_x=0, size_y=5, uuid="bus-entry-uuid-1")
+    wire3 = Wire(
+        uuid="wire-uuid-3", points=[Point(30, 35), Point(40, 35)], connected_pins=[]
+    )
+    label2 = Label(text="DATA_LINE", x=30, y=30, rotation=0, uuid="label-uuid-2")
+
+    schema.bus_entries.append(bus_entry)
+    schema.wires.append(wire3)
+    schema.labels.append(label2)
+
+    # Component 3: Unconnected wire without a label
+    wire4 = Wire(
+        uuid="wire-uuid-4", points=[Point(50, 50), Point(60, 50)], connected_pins=[]
+    )
+    schema.wires.append(wire4)
+
+    # There should be 3 separate nets
+    nets = schema.nets
+    assert len(nets) == 3
+
+    # Check that each net has the expected name
+    net_names = [net.name for net in nets]
+    assert "POWER_RAIL" in net_names
+    assert "DATA_LINE" in net_names
+
+    # Check that there's one auto-named net
+    auto_named_nets = [net for net in nets if net.name.startswith("net_")]
+    assert len(auto_named_nets) == 1
+
+    # Verify that elements are properly grouped in their respective nets
+    power_net = next(net for net in nets if net.name == "POWER_RAIL")
+    assert len(power_net.wires) == 2
+    assert len(power_net.junctions) == 1
+
+    data_net = next(net for net in nets if net.name == "DATA_LINE")
+    assert len(data_net.bus_entries) == 1
+    assert len(data_net.wires) == 1
+
+    auto_net = next(net for net in nets if net.name.startswith("net_"))
+    assert len(auto_net.wires) == 1
+    assert len(auto_net.wires) == 1  # Just the single unconnected wire
