@@ -48,4 +48,9 @@ def main():
         print([symbol.lib_id for symbol in schema.symbols])
         # print(schema.symbols[0].pins)
         print([(inst.uuid, inst.lib_id) for inst in schema.instances])
-        print([(wire.uuid, [(p.x, p.y) for p in wire.points]) for wire in schema.wires])
+        print(
+            [
+                (wire.uuid, [(p.x, p.y) for p in wire.points])
+                for wire in schema.wires.values()
+            ]
+        )

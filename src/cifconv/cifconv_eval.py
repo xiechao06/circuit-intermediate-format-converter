@@ -477,20 +477,24 @@ def cifconv_eval(expr: Expr | None):
             schema.instances.append(process_symbol_instance(expr))
         elif is_list(expr, "wire"):
             assert isinstance(expr, ListExpr)
-            schema.wires.append(process_wire(expr))
+            wire = process_wire(expr)
+            schema.wires[wire.uuid] = wire
         elif is_list(expr, "bus"):
             assert isinstance(expr, ListExpr)
-            schema.buses.append(process_bus(expr))
+            bus = process_bus(expr)
+            schema.buses[bus.uuid] = bus
         elif is_list(expr, "label"):
             assert isinstance(expr, ListExpr)
             schema.labels.append(process_label(expr))
         elif is_list(expr, "junction"):
             assert isinstance(expr, ListExpr)
-            schema.junctions.append(process_junction(expr))
+            junction = process_junction(expr)
+            schema.junctions[junction.uuid] = junction
         elif is_list(expr, "no_connect"):
             assert isinstance(expr, ListExpr)
             schema.noconnects.append(process_no_connect(expr))
         elif is_list(expr, "bus_entry"):
             assert isinstance(expr, ListExpr)
-            schema.bus_entries.append(process_bus_entry(expr))
+            bus_entry = process_bus_entry(expr)
+            schema.bus_entries[bus_entry.uuid] = bus_entry
     return schema

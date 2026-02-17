@@ -16,12 +16,12 @@ class Schema:
     def __init__(self):
         self.symbols: list[Symbol] = []
         self.instances: list[SymbolInstance] = []
-        self.wires: list[Wire] = []
-        self.buses: list[Bus] = []
+        self.wires: dict[str, Wire] = {}
+        self.buses: dict[str, Bus] = {}
         self.labels: list[Label] = []
-        self.junctions: list[Junction] = []
+        self.junctions: dict[str, Junction] = {}
         self.noconnects: list[NoConnect] = []
-        self.bus_entries: list[BusEntry] = []
+        self.bus_entries: dict[str, BusEntry] = {}
 
     @cached_property
     def nets(self) -> list["Net"]:
@@ -41,28 +41,28 @@ class Schema:
         coord_to_elements: dict[Point, list[tuple[str, str]]] = {}
 
         # Add wires to coordinate map
-        for wire in self.wires:
+        for wire in self.wires.values():
             for point in wire.points:
                 if point not in coord_to_elements:
                     coord_to_elements[point] = []
                 coord_to_elements[point].append(("wire", wire.uuid))
 
         # Add buses to coordinate map
-        for bus in self.buses:
+        for bus in self.buses.values():
             for point in bus.points:
                 if point not in coord_to_elements:
                     coord_to_elements[point] = []
                 coord_to_elements[point].append(("bus", bus.uuid))
 
         # Add junctions to coordinate map
-        for junction in self.junctions:
+        for junction in self.junctions.values():
             point = Point(junction.x, junction.y)
             if point not in coord_to_elements:
                 coord_to_elements[point] = []
             coord_to_elements[point].append(("junction", junction.uuid))
 
         # Add bus entries to coordinate map (both start and end points)
-        for bus_entry in self.bus_entries:
+        for bus_entry in self.bus_entries.values():
             start_point = bus_entry.start_point
             end_point = bus_entry.end_point
 
@@ -144,24 +144,22 @@ class Schema:
             for elem_type, elem_uuid in elements:
                 # Check if this element's coordinates match any label
                 if elem_type == "wire":
-                    wire = next(w for w in self.wires if w.uuid == elem_uuid)
+                    wire = self.wires[elem_uuid]
                     for point in wire.points:
                         if point in coord_to_label:
                             labels_for_group.add(coord_to_label[point])
                 elif elem_type == "bus":
-                    bus = next(b for b in self.buses if b.uuid == elem_uuid)
+                    bus = self.buses[elem_uuid]
                     for point in bus.points:
                         if point in coord_to_label:
                             labels_for_group.add(coord_to_label[point])
                 elif elem_type == "junction":
-                    junction = next(j for j in self.junctions if j.uuid == elem_uuid)
+                    junction = self.junctions[elem_uuid]
                     point = Point(junction.x, junction.y)
                     if point in coord_to_label:
                         labels_for_group.add(coord_to_label[point])
                 elif elem_type == "bus_entry":
-                    bus_entry = next(
-                        be for be in self.bus_entries if be.uuid == elem_uuid
-                    )
+                    bus_entry = self.bus_entries[elem_uuid]
                     start_point = bus_entry.start_point
                     end_point = bus_entry.end_point
                     if start_point in coord_to_label:
@@ -195,18 +193,16 @@ class Schema:
 
             for elem_type, elem_uuid in groups[group_root]:
                 if elem_type == "wire":
-                    wire = next(w for w in self.wires if w.uuid == elem_uuid)
+                    wire = self.wires[elem_uuid]
                     wires_for_net.append(wire)
                 elif elem_type == "bus":
-                    bus = next(b for b in self.buses if b.uuid == elem_uuid)
+                    bus = self.buses[elem_uuid]
                     buses_for_net.append(bus)
                 elif elem_type == "junction":
-                    junction = next(j for j in self.junctions if j.uuid == elem_uuid)
+                    junction = self.junctions[elem_uuid]
                     junctions_for_net.append(junction)
                 elif elem_type == "bus_entry":
-                    bus_entry = next(
-                        be for be in self.bus_entries if be.uuid == elem_uuid
-                    )
+                    bus_entry = self.bus_entries[elem_uuid]
                     bus_entries_for_net.append(bus_entry)
 
             # Create Net object

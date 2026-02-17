@@ -874,7 +874,7 @@ def test_schema_nets_property():
     wire = Wire(
         uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[]
     )
-    schema.wires.append(wire)
+    schema.wires[wire.uuid] = wire
 
     # Add a label at the same position as the wire
     label = Label(text="VCC", x=0, y=0, rotation=0, uuid="label-uuid-1")
@@ -900,7 +900,7 @@ def test_schema_nets_property_unnamed_net():
     wire = Wire(
         uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[]
     )
-    schema.wires.append(wire)
+    schema.wires[wire.uuid] = wire
 
     # The net should be named with the default naming scheme
     nets = schema.nets
@@ -925,11 +925,12 @@ def test_schema_nets_property_multiple_connected_elements():
     wire2 = Wire(
         uuid="wire-uuid-2", points=[Point(10, 0), Point(20, 0)], connected_pins=[]
     )
-    schema.wires.extend([wire1, wire2])
+    schema.wires[wire1.uuid] = wire1
+    schema.wires[wire2.uuid] = wire2
 
     # Add a junction at the connection point
     junction = Junction(x=10, y=0, uuid="junction-uuid-1")
-    schema.junctions.append(junction)
+    schema.junctions[junction.uuid] = junction
 
     # Add a label at the connection point
     label = Label(text="SIGNAL_A", x=10, y=0, rotation=0, uuid="label-uuid-1")
@@ -954,17 +955,17 @@ def test_schema_nets_with_bus_and_bus_entry():
 
     # Add a bus
     bus = Bus(uuid="bus-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[])
-    schema.buses.append(bus)
+    schema.buses[bus.uuid] = bus
 
     # Add a bus entry that connects to the bus
     bus_entry = BusEntry(x=10, y=0, size_x=0, size_y=5, uuid="bus-entry-uuid-1")
-    schema.bus_entries.append(bus_entry)
+    schema.bus_entries[bus_entry.uuid] = bus_entry
 
     # Add a wire that connects to the end of the bus entry
     wire = Wire(
         uuid="wire-uuid-1", points=[Point(10, 5), Point(20, 5)], connected_pins=[]
     )
-    schema.wires.append(wire)
+    schema.wires[wire.uuid] = wire
 
     # Add a label at the connection point
     label = Label(text="BUS_SIGNAL", x=10, y=0, rotation=0, uuid="label-uuid-1")
@@ -991,17 +992,17 @@ def test_schema_nets_with_multiple_buses_connected_via_junction():
 
     # Add first bus
     bus1 = Bus(uuid="bus-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[])
-    schema.buses.append(bus1)
+    schema.buses[bus1.uuid] = bus1
 
     # Add second bus
     bus2 = Bus(
         uuid="bus-uuid-2", points=[Point(10, 0), Point(20, 0)], connected_pins=[]
     )
-    schema.buses.append(bus2)
+    schema.buses[bus2.uuid] = bus2
 
     # Add a junction at the connection point
     junction = Junction(x=10, y=0, uuid="junction-uuid-1")
-    schema.junctions.append(junction)
+    schema.junctions[junction.uuid] = junction
 
     # Add a label at the connection point
     label = Label(text="MULTI_BUS_NET", x=10, y=0, rotation=0, uuid="label-uuid-1")
@@ -1029,7 +1030,7 @@ def test_schema_nets_multiple_separate_networks():
     wire1 = Wire(
         uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[]
     )
-    schema.wires.append(wire1)
+    schema.wires[wire1.uuid] = wire1
     label1 = Label(text="NET_A", x=0, y=0, rotation=0, uuid="label-uuid-1")
     schema.labels.append(label1)
 
@@ -1037,7 +1038,7 @@ def test_schema_nets_multiple_separate_networks():
     bus1 = Bus(
         uuid="bus-uuid-1", points=[Point(20, 20), Point(30, 20)], connected_pins=[]
     )
-    schema.buses.append(bus1)
+    schema.buses[bus1.uuid] = bus1
     label2 = Label(text="NET_B", x=20, y=20, rotation=0, uuid="label-uuid-2")
     schema.labels.append(label2)
 
@@ -1045,7 +1046,7 @@ def test_schema_nets_multiple_separate_networks():
     wire2 = Wire(
         uuid="wire-uuid-2", points=[Point(40, 40), Point(50, 40)], connected_pins=[]
     )
-    schema.wires.append(wire2)
+    schema.wires[wire2.uuid] = wire2
 
     # There should be 3 separate nets
     nets = schema.nets
@@ -1082,8 +1083,9 @@ def test_schema_nets_multiple_connected_components():
     junction1 = Junction(x=10, y=0, uuid="junction-uuid-1")
     label1 = Label(text="POWER_RAIL", x=10, y=0, rotation=0, uuid="label-uuid-1")
 
-    schema.wires.extend([wire1, wire2])
-    schema.junctions.append(junction1)
+    schema.wires[wire1.uuid] = wire1
+    schema.wires[wire2.uuid] = wire2
+    schema.junctions[junction1.uuid] = junction1
     schema.labels.append(label1)
 
     # Component 2: A bus entry and wire with a different label
@@ -1093,15 +1095,15 @@ def test_schema_nets_multiple_connected_components():
     )
     label2 = Label(text="DATA_LINE", x=30, y=30, rotation=0, uuid="label-uuid-2")
 
-    schema.bus_entries.append(bus_entry)
-    schema.wires.append(wire3)
+    schema.bus_entries[bus_entry.uuid] = bus_entry
+    schema.wires[wire3.uuid] = wire3
     schema.labels.append(label2)
 
     # Component 3: Unconnected wire without a label
     wire4 = Wire(
         uuid="wire-uuid-4", points=[Point(50, 50), Point(60, 50)], connected_pins=[]
     )
-    schema.wires.append(wire4)
+    schema.wires[wire4.uuid] = wire4
 
     # There should be 3 separate nets
     nets = schema.nets
