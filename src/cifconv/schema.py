@@ -28,7 +28,10 @@ class Schema:
         """
         Returns a list of Net objects based on connected components in the schematic.
 
-        A net is formed by electrically connected elements (wires, buses, junctions, bus entries).
+        A net is formed by electrically connected elements (wires, buses, bus entries).
+        Junctions are not used for connectivity detection because in KiCad, when a junction
+        is placed on a wire, the wire is split into segments with the junction position as
+        an endpoint. Therefore, connectivity can be determined purely from wire/bus points.
         If a net contains a label, it is named after that label.
         Otherwise, it is named as 'net_{n}' where n is the sequence number.
         """
@@ -37,31 +40,20 @@ class Schema:
         from cifconv.junction import Junction
         from cifconv.wire import Wire
 
-        # Create a mapping from coordinates to elements that contain those coordinates
         coord_to_elements: dict[Point, list[tuple[str, str]]] = {}
 
-        # Add wires to coordinate map
         for wire in self.wires.values():
             for point in wire.points:
                 if point not in coord_to_elements:
                     coord_to_elements[point] = []
                 coord_to_elements[point].append(("wire", wire.uuid))
 
-        # Add buses to coordinate map
         for bus in self.buses.values():
             for point in bus.points:
                 if point not in coord_to_elements:
                     coord_to_elements[point] = []
                 coord_to_elements[point].append(("bus", bus.uuid))
 
-        # Add junctions to coordinate map
-        for junction in self.junctions.values():
-            point = Point(junction.x, junction.y)
-            if point not in coord_to_elements:
-                coord_to_elements[point] = []
-            coord_to_elements[point].append(("junction", junction.uuid))
-
-        # Add bus entries to coordinate map (both start and end points)
         for bus_entry in self.bus_entries.values():
             start_point = bus_entry.start_point
             end_point = bus_entry.end_point
@@ -74,32 +66,12 @@ class Schema:
                 coord_to_elements[end_point] = []
             coord_to_elements[end_point].append(("bus_entry", bus_entry.uuid))
 
-        # Find connected components using Union-Find algorithm
         element_to_group: dict[tuple[str, str], tuple[str, str]] = {}
 
         def find(element: tuple[str, str]) -> tuple[str, str]:
-            """
-            Find the root element of a group using path compression.
-
-            This function implements the "find" operation of a Union-Find (Disjoint Set Union)
-            data structure. It locates the root representative of the group that contains
-            the given element and optimizes future lookups by compressing the path.
-
-            Args:
-                element (tuple[str, str]): A tuple representing an element to find its group root.
-
-            Returns:
-                tuple[str, str]: The root element of the group containing the input element.
-
-            Note:
-                This function modifies the `element_to_group` dictionary to implement path
-                compression, which flattens the tree structure and improves performance of
-                subsequent find operations.
-            """
             if element not in element_to_group:
                 element_to_group[element] = element
                 return element
-            # Path compression
             if element_to_group[element] != element:
                 element_to_group[element] = find(element_to_group[element])
             return element_to_group[element]
@@ -110,20 +82,16 @@ class Schema:
             if root1 != root2:
                 element_to_group[root1] = root2
 
-        # Initialize all elements in the union-find structure
         for elements in coord_to_elements.values():
             for element in elements:
-                find(element)  # Ensure element is initialized in the structure
+                find(element)
 
-        # Connect elements that share coordinates
         for elements in coord_to_elements.values():
             if len(elements) > 1:
-                # Connect all elements at this coordinate
                 first_element = elements[0]
                 for other_element in elements[1:]:
                     union(first_element, other_element)
 
-        # Group elements by their connected component
         groups: dict[tuple[str, str], list[tuple[str, str]]] = {}
         for element in element_to_group.keys():
             root = find(element)
@@ -131,18 +99,14 @@ class Schema:
                 groups[root] = []
             groups[root].append(element)
 
-        # Associate labels with connected components
-        # Create a coordinate to label mapping
         coord_to_label: dict[Point, str] = {}
         for label in self.labels:
             coord_to_label[Point(label.x, label.y)] = label.text
 
-        # Map each group to its labels
         group_labels: dict[tuple[str, str], str] = {}
         for group_root, elements in groups.items():
             labels_for_group: set[str] = set()
             for elem_type, elem_uuid in elements:
-                # Check if this element's coordinates match any label
                 if elem_type == "wire":
                     wire = self.wires[elem_uuid]
                     for point in wire.points:
@@ -153,11 +117,6 @@ class Schema:
                     for point in bus.points:
                         if point in coord_to_label:
                             labels_for_group.add(coord_to_label[point])
-                elif elem_type == "junction":
-                    junction = self.junctions[elem_uuid]
-                    point = Point(junction.x, junction.y)
-                    if point in coord_to_label:
-                        labels_for_group.add(coord_to_label[point])
                 elif elem_type == "bus_entry":
                     bus_entry = self.bus_entries[elem_uuid]
                     start_point = bus_entry.start_point
@@ -167,45 +126,58 @@ class Schema:
                     if end_point in coord_to_label:
                         labels_for_group.add(coord_to_label[end_point])
 
-            # Assign the first label found to this group, or None if no label
             if labels_for_group:
-                group_labels[group_root] = next(
-                    iter(labels_for_group)
-                )  # Take first label
+                group_labels[group_root] = next(iter(labels_for_group))
 
-        # Generate Net objects
+        net_point_to_group: dict[Point, tuple[str, str]] = {}
+        for group_root, elements in groups.items():
+            for elem_type, elem_uuid in elements:
+                if elem_type == "wire":
+                    wire = self.wires[elem_uuid]
+                    for point in wire.points:
+                        net_point_to_group[point] = group_root
+                elif elem_type == "bus":
+                    bus = self.buses[elem_uuid]
+                    for point in bus.points:
+                        net_point_to_group[point] = group_root
+                elif elem_type == "bus_entry":
+                    bus_entry = self.bus_entries[elem_uuid]
+                    net_point_to_group[bus_entry.start_point] = group_root
+                    net_point_to_group[bus_entry.end_point] = group_root
+
+        junction_to_group: dict[str, tuple[str, str]] = {}
+        for junction in self.junctions.values():
+            point = Point(junction.x, junction.y)
+            if point in net_point_to_group:
+                junction_to_group[junction.uuid] = net_point_to_group[point]
+
         net_objects: list[Net] = []
         net_counter: int = 0
 
-        for group_root in sorted(groups.keys()):  # Sort to ensure consistent ordering
-            # Determine net name
+        for group_root in sorted(groups.keys()):
             if group_root in group_labels:
                 net_name = group_labels[group_root]
             else:
                 net_name = f"net_{net_counter}"
                 net_counter += 1
 
-            # Collect elements for this net
             wires_for_net: list[Wire] = []
             buses_for_net: list[Bus] = []
-            junctions_for_net: list[Junction] = []
             bus_entries_for_net: list[BusEntry] = []
 
             for elem_type, elem_uuid in groups[group_root]:
                 if elem_type == "wire":
-                    wire = self.wires[elem_uuid]
-                    wires_for_net.append(wire)
+                    wires_for_net.append(self.wires[elem_uuid])
                 elif elem_type == "bus":
-                    bus = self.buses[elem_uuid]
-                    buses_for_net.append(bus)
-                elif elem_type == "junction":
-                    junction = self.junctions[elem_uuid]
-                    junctions_for_net.append(junction)
+                    buses_for_net.append(self.buses[elem_uuid])
                 elif elem_type == "bus_entry":
-                    bus_entry = self.bus_entries[elem_uuid]
-                    bus_entries_for_net.append(bus_entry)
+                    bus_entries_for_net.append(self.bus_entries[elem_uuid])
 
-            # Create Net object
+            junctions_for_net: list[Junction] = []
+            for junction_uuid, grp in junction_to_group.items():
+                if grp == group_root:
+                    junctions_for_net.append(self.junctions[junction_uuid])
+
             net_obj = Net(
                 name=net_name,
                 wires=wires_for_net,
