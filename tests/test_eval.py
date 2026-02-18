@@ -152,7 +152,7 @@ def test_process_pin():
     assert pin.rel_x == -22.86
     assert pin.rel_y == 10.16
     assert pin.rotation == 0
-    assert pin.id == "test_ident:1"
+    assert pin.number == "1"
 
 
 def test_process_symbol():
@@ -384,7 +384,7 @@ def test_process_symbol():
     assert pin.rel_x == -22.86
     assert pin.rel_y == 10.16
     assert pin.rotation == 0
-    assert pin.id == "Micro_SD_Card_Det1_1_1:1"
+    assert pin.number == "1"
 
     pin = symbol.pins[1]
     assert pin.name == "SHIELD"
@@ -392,7 +392,7 @@ def test_process_symbol():
     assert pin.rel_x == 20.32
     assert pin.rel_y == -12.7
     assert pin.rotation == 180
-    assert pin.id == "Micro_SD_Card_Det1_1_1:10"
+    assert pin.number == "10"
 
     pin = symbol.pins[2]
     assert pin.name == "DAT3/CD"
@@ -400,7 +400,7 @@ def test_process_symbol():
     assert pin.rel_x == -22.86
     assert pin.rel_y == 7.62
     assert pin.rotation == 0
-    assert pin.id == "Micro_SD_Card_Det1_1_1:2"
+    assert pin.number == "2"
 
     pin = symbol.pins[3]
     assert pin.name == "CMD"
@@ -408,7 +408,7 @@ def test_process_symbol():
     assert pin.rel_x == -22.86
     assert pin.rel_y == 5.08
     assert pin.rotation == 0
-    assert pin.id == "Micro_SD_Card_Det1_1_1:3"
+    assert pin.number == "3"
 
     pin = symbol.pins[4]
     assert pin.name == "VDD"
@@ -416,7 +416,7 @@ def test_process_symbol():
     assert pin.rel_x == -22.86
     assert pin.rel_y == 2.54
     assert pin.rotation == 0
-    assert pin.id == "Micro_SD_Card_Det1_1_1:4"
+    assert pin.number == "4"
 
     pin = symbol.pins[5]
     assert pin.name == "CLK"
@@ -424,7 +424,7 @@ def test_process_symbol():
     assert pin.rel_x == -22.86
     assert pin.rel_y == 0
     assert pin.rotation == 0
-    assert pin.id == "Micro_SD_Card_Det1_1_1:5"
+    assert pin.number == "5"
 
     pin = symbol.pins[6]
     assert pin.name == "VSS"
@@ -432,7 +432,7 @@ def test_process_symbol():
     assert pin.rel_x == -22.86
     assert pin.rel_y == -2.54
     assert pin.rotation == 0
-    assert pin.id == "Micro_SD_Card_Det1_1_1:6"
+    assert pin.number == "6"
 
     pin = symbol.pins[7]
     assert pin.name == "DAT0"
@@ -440,7 +440,7 @@ def test_process_symbol():
     assert pin.rel_x == -22.86
     assert pin.rel_y == -5.08
     assert pin.rotation == 0
-    assert pin.id == "Micro_SD_Card_Det1_1_1:7"
+    assert pin.number == "7"
 
     pin = symbol.pins[8]
     assert pin.name == "DAT1"
@@ -448,7 +448,7 @@ def test_process_symbol():
     assert pin.rel_x == -22.86
     assert pin.rel_y == -7.62
     assert pin.rotation == 0
-    assert pin.id == "Micro_SD_Card_Det1_1_1:8"
+    assert pin.number == "8"
 
     pin = symbol.pins[9]
     assert pin.name == "DET"
@@ -456,7 +456,7 @@ def test_process_symbol():
     assert pin.rel_x == -22.86
     assert pin.rel_y == -12.7
     assert pin.rotation == 0
-    assert pin.id == "Micro_SD_Card_Det1_1_1:9"
+    assert pin.number == "9"
 
 
 def test_process_symbol_instance():

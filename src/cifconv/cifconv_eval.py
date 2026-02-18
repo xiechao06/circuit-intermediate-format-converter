@@ -88,8 +88,8 @@ def process_symbol(symbol_expr: ListExpr):
                 description = property_value
         if is_list(sub_expr, "symbol"):
             assert isinstance(sub_expr, ListExpr)
-            ident_name = expect_str(sub_expr.sub_exprs[1])
-            pins.extend(collect_pins(ident_name, sub_expr))
+            symbol_name = expect_str(sub_expr.sub_exprs[1])
+            pins.extend(collect_pins(symbol_name, sub_expr))
 
     return Symbol(
         lib_id=id,
@@ -101,11 +101,11 @@ def process_symbol(symbol_expr: ListExpr):
     )
 
 
-def process_pin(ident_name: str, pin_expr: ListExpr) -> Pin:
+def process_pin(symbol_name: str, pin_expr: ListExpr) -> Pin:
     sub_exprs = expect_list(pin_expr, "pin")
     type_: str = expect_ident(sub_exprs[0])
     name: str | None = None
-    id: str = ""
+    number: str = ""
     rel_x: float | None = None
     rel_y: float | None = None
     rotation: float = 0
@@ -115,7 +115,7 @@ def process_pin(ident_name: str, pin_expr: ListExpr) -> Pin:
             name = expect_str(sub_expr.sub_exprs[1])
         elif is_list(sub_expr, "number"):
             assert isinstance(sub_expr, ListExpr)
-            id = ident_name + ":" + expect_str(sub_expr.sub_exprs[1])
+            number = expect_str(sub_expr.sub_exprs[1])
         elif is_list(sub_expr, "at"):
             assert isinstance(sub_expr, ListExpr)
             rel_x = expect_number(sub_expr.sub_exprs[1])
@@ -125,15 +125,15 @@ def process_pin(ident_name: str, pin_expr: ListExpr) -> Pin:
                 if len(sub_expr.sub_exprs) > 3
                 else 0
             )
-    assert name is not None, f"Pin in ident {ident_name} is missing name"
+    assert name is not None, f"Pin in ident {symbol_name} is missing name"
     assert rel_x is not None, (
-        f"Pin {name} in ident {ident_name} is missing attribute 'at'"
+        f"Pin {name} in ident {symbol_name} is missing attribute 'at'"
     )
     assert rel_y is not None, (
-        f"Pin {name} in ident {ident_name} is missing attribute 'at'"
+        f"Pin {name} in ident {symbol_name} is missing attribute 'at'"
     )
     return Pin(
-        id=id,
+        number=number,
         name=name,
         type=cast(PinType, type_),
         rel_x=rel_x,
@@ -142,12 +142,12 @@ def process_pin(ident_name: str, pin_expr: ListExpr) -> Pin:
     )
 
 
-def collect_pins(ident_name: str, expr: ListExpr) -> list[Pin]:
+def collect_pins(symbol_name: str, expr: ListExpr) -> list[Pin]:
     pins: list[Pin] = []
     for sub_expr in expr.sub_exprs:
         if is_list(sub_expr, "pin"):
             assert isinstance(sub_expr, ListExpr)
-            pin = process_pin(ident_name=ident_name, pin_expr=sub_expr)
+            pin = process_pin(symbol_name=symbol_name, pin_expr=sub_expr)
             pins.append(pin)
     return pins
 

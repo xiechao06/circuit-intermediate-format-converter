@@ -19,7 +19,7 @@ PinType = Literal[
 
 @dataclass
 class Pin:
-    id: str
+    number: str
     name: str
     # see https://dev-docs.kicad.org/en/file-formats/sexpr-intro/index.html#_ident_pin
     type: PinType | None
