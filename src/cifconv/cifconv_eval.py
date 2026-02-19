@@ -7,7 +7,7 @@ from cifconv.bus_entry import BusEntry
 from cifconv.expr import AtomExpr, Expr, ListExpr
 from cifconv.junction import Junction
 from cifconv.label import Label
-from cifconv.noconnect import NoConnect
+from cifconv.no_connect import NoConnect
 from cifconv.pin import Pin, PinType
 from cifconv.point import Point
 from cifconv.schema import Schema
@@ -471,7 +471,8 @@ def cifconv_eval(expr: Expr | None):
             ident_exprs = expect_list(expr, "lib_symbols")
             for ident_expr in ident_exprs:
                 assert isinstance(ident_expr, ListExpr)
-                schema.symbols.append(process_symbol(ident_expr))
+                symbol = process_symbol(ident_expr)
+                schema.symbols[symbol.lib_id] = symbol
         elif is_list(expr, "symbol"):
             assert isinstance(expr, ListExpr)
             schema.instances.append(process_symbol_instance(expr))

@@ -5,7 +5,7 @@ from cifconv.bus_entry import BusEntry
 from cifconv.junction import Junction
 from cifconv.label import Label
 from cifconv.net import Net
-from cifconv.noconnect import NoConnect
+from cifconv.no_connect import NoConnect
 from cifconv.point import Point
 from cifconv.symbol import Symbol
 from cifconv.symbol_instance import SymbolInstance
@@ -14,7 +14,7 @@ from cifconv.wire import Wire
 
 class Schema:
     def __init__(self):
-        self.symbols: list[Symbol] = []
+        self.symbols: dict[str, Symbol] = {}
         self.instances: list[SymbolInstance] = []
         self.wires: dict[str, Wire] = {}
         self.buses: dict[str, Bus] = {}
