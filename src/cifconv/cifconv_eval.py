@@ -492,7 +492,7 @@ def cifconv_eval(expr: Expr | None):
             schema.junctions[junction.uuid] = junction
         elif is_list(expr, "no_connect"):
             assert isinstance(expr, ListExpr)
-            schema.noconnects.append(process_no_connect(expr))
+            schema.no_connects.append(process_no_connect(expr))
         elif is_list(expr, "bus_entry"):
             assert isinstance(expr, ListExpr)
             bus_entry = process_bus_entry(expr)

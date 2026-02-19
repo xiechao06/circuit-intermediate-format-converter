@@ -20,7 +20,7 @@ class Schema:
         self.buses: dict[str, Bus] = {}
         self.labels: list[Label] = []
         self.junctions: dict[str, Junction] = {}
-        self.noconnects: list[NoConnect] = []
+        self.no_connects: list[NoConnect] = []
         self.bus_entries: dict[str, BusEntry] = {}
 
     @cached_property
