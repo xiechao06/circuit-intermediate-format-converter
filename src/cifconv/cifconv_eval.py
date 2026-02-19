@@ -127,12 +127,12 @@ def process_pin(symbol_name: str, pin_expr: ListExpr) -> Pin:
                 if len(sub_expr.sub_exprs) > 3
                 else 0
             )
-    assert name is not None, f"Pin in ident {symbol_name} is missing name"
+    assert name is not None, f"Pin in symbol {symbol_name} is missing name"
     assert rel_x is not None, (
-        f"Pin {name} in ident {symbol_name} is missing attribute 'at'"
+        f"Pin {name} in symbol {symbol_name} is missing attribute 'at'"
     )
     assert rel_y is not None, (
-        f"Pin {name} in ident {symbol_name} is missing attribute 'at'"
+        f"Pin {name} in symbol {symbol_name} is missing attribute 'at'"
     )
     return Pin(
         number=number,
