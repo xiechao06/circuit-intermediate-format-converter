@@ -1,3 +1,4 @@
+import math
 from typing import cast
 
 from loguru import logger
@@ -9,6 +10,7 @@ from cifconv.junction import Junction
 from cifconv.label import Label
 from cifconv.no_connect import NoConnect
 from cifconv.pin import Pin, PinType
+from cifconv.pin_instance import PinInstance
 from cifconv.point import Point
 from cifconv.schema import Schema
 from cifconv.symbol import Symbol
@@ -165,7 +167,9 @@ def is_list(expr: Expr, first_token_value: str) -> bool:
     )
 
 
-def process_symbol_instance(symbol_instance_expr: ListExpr) -> SymbolInstance:
+def process_symbol_instance(
+    symbol_instance_expr: ListExpr, schema: Schema
+) -> SymbolInstance:
     sub_exprs = expect_list(symbol_instance_expr, "symbol")
 
     lib_id = ""
@@ -204,6 +208,25 @@ def process_symbol_instance(symbol_instance_expr: ListExpr) -> SymbolInstance:
     if x is None or y is None:
         raise ValueError("Symbol instance is missing at property")
 
+    pin_instances: list[PinInstance] = []
+    symbol_def = schema.symbols.get(lib_id)
+    if symbol_def is not None:
+        for pin in symbol_def.pins:
+            rad = math.radians(rotation)
+            abs_x = x + pin.rel_x * math.cos(rad) - pin.rel_y * math.sin(rad)
+            abs_y = y + pin.rel_x * math.sin(rad) + pin.rel_y * math.cos(rad)
+            abs_rotation = (pin.rotation + rotation) % 360
+            pin_instances.append(
+                PinInstance(
+                    number=pin.number,
+                    name=pin.name,
+                    type=pin.type,
+                    x=abs_x,
+                    y=abs_y,
+                    rotation=abs_rotation,
+                )
+            )
+
     return SymbolInstance(
         uuid=uuid,
         lib_id=lib_id,
@@ -212,6 +235,7 @@ def process_symbol_instance(symbol_instance_expr: ListExpr) -> SymbolInstance:
         y=y,
         rotation=rotation,
         attributes=attributes,
+        pin_instances=pin_instances if pin_instances else None,
     )
 
 
@@ -475,7 +499,7 @@ def cifconv_eval(expr: Expr | None):
                 schema.symbols[symbol.lib_id] = symbol
         elif is_list(expr, "symbol"):
             assert isinstance(expr, ListExpr)
-            schema.instances.append(process_symbol_instance(expr))
+            schema.instances.append(process_symbol_instance(expr, schema))
         elif is_list(expr, "wire"):
             assert isinstance(expr, ListExpr)
             wire = process_wire(expr)

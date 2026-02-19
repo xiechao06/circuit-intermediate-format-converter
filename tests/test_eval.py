@@ -554,7 +554,10 @@ def test_process_symbol_instance():
     tokens = list(kicad_sch_tokenize(input_data))
     expr = read_expr(t for t in tokens)
     assert isinstance(expr, ListExpr)
-    symbol_instance = process_symbol_instance(expr)
+    from cifconv.schema import Schema
+
+    schema = Schema()
+    symbol_instance = process_symbol_instance(expr, schema)
 
     assert symbol_instance.uuid == "02450218-5adf-4bf1-8fee-f81b71280256"
     assert symbol_instance.lib_id == "Connector_Generic:Conn_01x09"

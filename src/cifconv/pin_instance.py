@@ -1,14 +1,13 @@
 from dataclasses import dataclass
 
-from cifconv.point import Point
+from cifconv.pin import PinType
 
 
 @dataclass
 class PinInstance:
-    """
-    Pin instance.
-    """
-
-    uuid: str
     number: str
-    pos: Point
+    name: str
+    type: PinType | None
+    x: float
+    y: float
+    rotation: float

@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from cifconv.pin_instance import PinInstance
+
 
 @dataclass
 class SymbolInstance:
@@ -11,3 +13,4 @@ class SymbolInstance:
     rotation: float = 0
     attributes: dict[str, str] | None = None
     description: str | None = None
+    pin_instances: list[PinInstance] | None = None
