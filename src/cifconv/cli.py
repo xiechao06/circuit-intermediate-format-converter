@@ -1,6 +1,7 @@
 import argparse
 import sys
 
+import json5
 from loguru import logger
 
 from cifconv.cifconv_eval import cifconv_eval
@@ -45,12 +46,5 @@ def main():
     with open(args.input_file, "r") as f:
         input_data = f.read()
         schema = cifconv_eval(read_expr(kicad_sch_tokenize(input_data)))
-        print([symbol.lib_id for symbol in schema.symbols.values()])
-        # print(next(iter(schema.symbols.values())).pins)
-        print([(inst.uuid, inst.lib_id) for inst in schema.instances])
-        print(
-            [
-                (wire.uuid, [(p.x, p.y) for p in wire.points])
-                for wire in schema.wires.values()
-            ]
-        )
+
+        print(json5.dumps(schema.to_json(), indent=4))

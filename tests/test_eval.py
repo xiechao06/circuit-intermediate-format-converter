@@ -1168,6 +1168,7 @@ def test_net_with_points():
     )
 
     net = Net(
+        uuid="net-uuid-1",
         name="TEST_NET",
         wires=[wire],
         buses=[],
@@ -1215,6 +1216,7 @@ def test_net_with_connected_pins():
     )
 
     net = Net(
+        uuid="net-uuid-2",
         name="CONNECTED_NET",
         wires=[wire],
         buses=[],

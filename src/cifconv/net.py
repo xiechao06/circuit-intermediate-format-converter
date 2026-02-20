@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 class Net:
     """Represents a net in a KiCad schematic, which is a collection of electrically connected elements."""
 
+    uuid: str
     name: str
     wires: list[Wire]
     buses: list[Bus]

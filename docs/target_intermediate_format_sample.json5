@@ -112,8 +112,8 @@
     ],
     "nets": [
         {
-            "name": null,
-            "net_id": "net_xxx",
+            "uuid": "net_001",
+            "name": "net_xxx", // name for the net
             "pins": [
                 {
                     "pin": "12", // pin number
@@ -127,7 +127,7 @@
         },
         {
             "name": "GND",
-            "net_id": "net_xxx",
+            "uuid": "net_002",
             "pins": [
                 {
                     "pin": "2",

@@ -1,4 +1,6 @@
+import uuid
 from functools import cached_property
+from typing import Any
 
 from cifconv.bus import Bus
 from cifconv.bus_entry import BusEntry
@@ -21,6 +23,109 @@ class Schema:
         self.labels: list[Label] = []
         self.no_connects: list[NoConnect] = []
         self.bus_entries: dict[str, BusEntry] = {}
+
+    def to_json(self) -> dict[str, Any]:
+        net_name_to_id: dict[str, str] = {}
+        for net in self.nets:
+            net_name_to_id[net.name] = net.uuid
+
+        buses_json: list[dict[str, Any]] = []
+        for bus in self.buses.values():
+            net_name = None
+            for net in self.nets:
+                if bus in net.buses:
+                    net_name = net.name
+                    break
+            buses_json.append(
+                {
+                    "name": bus.uuid,
+                    "net": net_name_to_id.get(net_name, "") if net_name else "",
+                    "points": [{"x": p.x, "y": p.y} for p in bus.points],
+                    "uuid": bus.uuid,
+                }
+            )
+
+        instances_json: list[dict[str, Any]] = []
+        for instance in self.instances:
+            instances_json.append(
+                {
+                    "attributes": instance.attributes or {},
+                    "designator": instance.designator,
+                    "lib_id": instance.lib_id,
+                    "placement": {
+                        "mirror": False,
+                        "rotation": instance.rotation,
+                        "x": instance.x,
+                        "y": instance.y,
+                    },
+                    "uuid": instance.uuid,
+                }
+            )
+
+        library_json: list[dict[str, Any]] = []
+        for lib_id, symbol in self.symbols.items():
+            pins_json: list[dict[str, Any]] = []
+            for pin in symbol.pins:
+                pins_json.append(
+                    {
+                        "id": pin.number,
+                        "name": pin.name,
+                        "rel_x": pin.rel_x,
+                        "rel_y": pin.rel_y,
+                        "type": pin.type or "unspecified",
+                    }
+                )
+            library_json.append(
+                {
+                    lib_id: {
+                        "pins": pins_json,
+                        "ref": symbol.ref,
+                        "type": symbol.type or "",
+                    }
+                }
+            )
+
+        nets_json: list[dict[str, Any]] = []
+        for net in self.nets:
+            pins_json: list[dict[str, Any]] = []
+            if net.connected_pins:
+                for instance, pin in net.connected_pins:
+                    pins_json.append(
+                        {
+                            "pin": pin.number,
+                            "ref": instance.designator,
+                        }
+                    )
+            nets_json.append(
+                {
+                    "name": net.name,
+                    "net_id": net.uuid,
+                    "pins": pins_json,
+                }
+            )
+
+        wires_json: list[dict[str, Any]] = []
+        for wire in self.wires.values():
+            net_name = None
+            for net in self.nets:
+                if wire in net.wires:
+                    net_name = net.name
+                    break
+            wires_json.append(
+                {
+                    "net": net_name_to_id.get(net_name, "") if net_name else "",
+                    "points": [{"x": p.x, "y": p.y} for p in wire.points],
+                    "uuid": wire.uuid,
+                }
+            )
+
+        return {
+            "buses": buses_json,
+            "instances": instances_json,
+            "library": library_json,
+            "nets": nets_json,
+            "wires": wires_json,
+        }
 
     @cached_property
     def nets(self) -> list["Net"]:
@@ -208,6 +313,7 @@ class Schema:
                     connected_pins_for_net.append(pin_pos_to_instance[point])
 
             net_obj = Net(
+                uuid=str(uuid.uuid4()),
                 name=net_name,
                 wires=wires_for_net,
                 buses=buses_for_net,
