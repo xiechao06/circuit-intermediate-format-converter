@@ -38,7 +38,6 @@ class Schema:
         """
         from cifconv.bus import Bus
         from cifconv.bus_entry import BusEntry
-        from cifconv.junction import Junction
         from cifconv.wire import Wire
 
         coord_to_elements: dict[Point, list[tuple[str, str]]] = {}
@@ -166,12 +165,6 @@ class Schema:
                     net_point_to_group[bus_entry.start_point] = group_root
                     net_point_to_group[bus_entry.end_point] = group_root
 
-        junction_to_group: dict[str, tuple[str, str]] = {}
-        for junction in self.junctions.values():
-            point = Point(junction.x, junction.y)
-            if point in net_point_to_group:
-                junction_to_group[junction.uuid] = net_point_to_group[point]
-
         no_connect_positions: set[Point] = set()
         for no_connect in self.no_connects:
             no_connect_positions.add(Point(no_connect.x, no_connect.y))
@@ -206,11 +199,6 @@ class Schema:
                 elif elem_type == "bus_entry":
                     bus_entries_for_net.append(self.bus_entries[elem_uuid])
 
-            junctions_for_net: list[Junction] = []
-            for junction_uuid, grp in junction_to_group.items():
-                if grp == group_root:
-                    junctions_for_net.append(self.junctions[junction_uuid])
-
             points_for_net: list[Point] = []
             for point, grp in net_point_to_group.items():
                 if grp == group_root:
@@ -225,7 +213,6 @@ class Schema:
                 name=net_name,
                 wires=wires_for_net,
                 buses=buses_for_net,
-                junctions=junctions_for_net,
                 bus_entries=bus_entries_for_net,
                 points=points_for_net,
                 connected_pins=connected_pins_for_net

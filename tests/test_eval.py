@@ -1006,7 +1006,6 @@ def test_schema_nets_with_multiple_buses_connected_via_junction():
     assert len(nets) == 1  # Only one net should be formed
     assert nets[0].name == "MULTI_BUS_NET"  # Named after the label
     assert len(nets[0].buses) == 2  # Should contain both buses
-    assert len(nets[0].junctions) == 1  # Should contain the junction
 
 
 def test_schema_nets_multiple_separate_networks():
@@ -1100,7 +1099,6 @@ def test_schema_nets_multiple_connected_components():
     # Verify that elements are properly grouped in their respective nets
     power_net = next(net for net in nets if net.name == "POWER_RAIL")
     assert len(power_net.wires) == 2
-    assert len(power_net.junctions) == 1
 
     data_net = next(net for net in nets if net.name == "DATA_LINE")
     assert len(data_net.bus_entries) == 1
@@ -1249,7 +1247,6 @@ def test_net_with_points():
         name="TEST_NET",
         wires=[wire],
         buses=[],
-        junctions=[],
         bus_entries=[],
         points=[Point(0, 0), Point(10, 0), Point(10, 10)],
     )
@@ -1297,7 +1294,6 @@ def test_net_with_connected_pins():
         name="CONNECTED_NET",
         wires=[wire],
         buses=[],
-        junctions=[],
         bus_entries=[],
         points=[Point(0, 0), Point(10, 0)],
         connected_pins=[(instance1, pin1), (instance2, pin2)],
