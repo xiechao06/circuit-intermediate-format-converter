@@ -255,8 +255,6 @@ def process_wire(wire_expr: ListExpr):
         Wire: A Wire object containing:
             - uuid (str): The unique identifier of the wire
             - points (list[Point]): A list of Point objects defining the wire's path
-              defining the wire's path
-            - connected_pins (list): An empty list (to be populated later)
 
     Raises:
         ValueError: If the wire is missing a UUID or has fewer than 2 points
@@ -281,7 +279,7 @@ def process_wire(wire_expr: ListExpr):
         raise ValueError("Wire is missing uuid")
     if len(points) < 2:
         raise ValueError("Wire must have at least 2 segments")
-    return Wire(uuid=uuid, points=points, connected_pins=[])
+    return Wire(uuid=uuid, points=points)
 
 
 def process_bus(bus_expr: ListExpr):
@@ -324,7 +322,7 @@ def process_bus(bus_expr: ListExpr):
         raise ValueError("Bus is missing uuid")
     if len(points) < 2:
         raise ValueError("Bus must have at least 2 segments")
-    return Bus(uuid=uuid, points=points, connected_pins=[])
+    return Bus(uuid=uuid, points=points)
 
 
 def process_label(label_expr: ListExpr) -> Label:

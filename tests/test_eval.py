@@ -876,9 +876,7 @@ def test_schema_nets_property():
     schema = Schema()
 
     # Add a wire
-    wire = Wire(
-        uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[]
-    )
+    wire = Wire(uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)])
     schema.wires[wire.uuid] = wire
 
     # Add a label at the same position as the wire
@@ -902,9 +900,7 @@ def test_schema_nets_property_unnamed_net():
     schema = Schema()
 
     # Add a wire
-    wire = Wire(
-        uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[]
-    )
+    wire = Wire(uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)])
     schema.wires[wire.uuid] = wire
 
     # The net should be named with the default naming scheme
@@ -924,12 +920,8 @@ def test_schema_nets_property_multiple_connected_elements():
     schema = Schema()
 
     # Add two wires that connect at a point
-    wire1 = Wire(
-        uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[]
-    )
-    wire2 = Wire(
-        uuid="wire-uuid-2", points=[Point(10, 0), Point(20, 0)], connected_pins=[]
-    )
+    wire1 = Wire(uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)])
+    wire2 = Wire(uuid="wire-uuid-2", points=[Point(10, 0), Point(20, 0)])
     schema.wires[wire1.uuid] = wire1
     schema.wires[wire2.uuid] = wire2
 
@@ -959,7 +951,7 @@ def test_schema_nets_with_bus_and_bus_entry():
     schema = Schema()
 
     # Add a bus
-    bus = Bus(uuid="bus-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[])
+    bus = Bus(uuid="bus-uuid-1", points=[Point(0, 0), Point(10, 0)])
     schema.buses[bus.uuid] = bus
 
     # Add a bus entry that connects to the bus
@@ -967,9 +959,7 @@ def test_schema_nets_with_bus_and_bus_entry():
     schema.bus_entries[bus_entry.uuid] = bus_entry
 
     # Add a wire that connects to the end of the bus entry
-    wire = Wire(
-        uuid="wire-uuid-1", points=[Point(10, 5), Point(20, 5)], connected_pins=[]
-    )
+    wire = Wire(uuid="wire-uuid-1", points=[Point(10, 5), Point(20, 5)])
     schema.wires[wire.uuid] = wire
 
     # Add a label at the connection point
@@ -996,13 +986,11 @@ def test_schema_nets_with_multiple_buses_connected_via_junction():
     schema = Schema()
 
     # Add first bus
-    bus1 = Bus(uuid="bus-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[])
+    bus1 = Bus(uuid="bus-uuid-1", points=[Point(0, 0), Point(10, 0)])
     schema.buses[bus1.uuid] = bus1
 
     # Add second bus
-    bus2 = Bus(
-        uuid="bus-uuid-2", points=[Point(10, 0), Point(20, 0)], connected_pins=[]
-    )
+    bus2 = Bus(uuid="bus-uuid-2", points=[Point(10, 0), Point(20, 0)])
     schema.buses[bus2.uuid] = bus2
 
     # Add a junction at the connection point
@@ -1032,25 +1020,19 @@ def test_schema_nets_multiple_separate_networks():
     schema = Schema()
 
     # Network 1: A wire with a label
-    wire1 = Wire(
-        uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[]
-    )
+    wire1 = Wire(uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)])
     schema.wires[wire1.uuid] = wire1
     label1 = Label(text="NET_A", x=0, y=0, rotation=0, uuid="label-uuid-1")
     schema.labels.append(label1)
 
     # Network 2: A bus with a label (separate from Network 1)
-    bus1 = Bus(
-        uuid="bus-uuid-1", points=[Point(20, 20), Point(30, 20)], connected_pins=[]
-    )
+    bus1 = Bus(uuid="bus-uuid-1", points=[Point(20, 20), Point(30, 20)])
     schema.buses[bus1.uuid] = bus1
     label2 = Label(text="NET_B", x=20, y=20, rotation=0, uuid="label-uuid-2")
     schema.labels.append(label2)
 
     # Network 3: A wire without a label (should get auto-generated name)
-    wire2 = Wire(
-        uuid="wire-uuid-2", points=[Point(40, 40), Point(50, 40)], connected_pins=[]
-    )
+    wire2 = Wire(uuid="wire-uuid-2", points=[Point(40, 40), Point(50, 40)])
     schema.wires[wire2.uuid] = wire2
 
     # There should be 3 separate nets
@@ -1079,12 +1061,8 @@ def test_schema_nets_multiple_connected_components():
     schema = Schema()
 
     # Component 1: Two wires connected by a junction with a label
-    wire1 = Wire(
-        uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[]
-    )
-    wire2 = Wire(
-        uuid="wire-uuid-2", points=[Point(10, 0), Point(20, 0)], connected_pins=[]
-    )
+    wire1 = Wire(uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)])
+    wire2 = Wire(uuid="wire-uuid-2", points=[Point(10, 0), Point(20, 0)])
     junction1 = Junction(x=10, y=0, uuid="junction-uuid-1")
     label1 = Label(text="POWER_RAIL", x=10, y=0, rotation=0, uuid="label-uuid-1")
 
@@ -1095,9 +1073,7 @@ def test_schema_nets_multiple_connected_components():
 
     # Component 2: A bus entry and wire with a different label
     bus_entry = BusEntry(x=30, y=30, size_x=0, size_y=5, uuid="bus-entry-uuid-1")
-    wire3 = Wire(
-        uuid="wire-uuid-3", points=[Point(30, 35), Point(40, 35)], connected_pins=[]
-    )
+    wire3 = Wire(uuid="wire-uuid-3", points=[Point(30, 35), Point(40, 35)])
     label2 = Label(text="DATA_LINE", x=30, y=30, rotation=0, uuid="label-uuid-2")
 
     schema.bus_entries[bus_entry.uuid] = bus_entry
@@ -1105,9 +1081,7 @@ def test_schema_nets_multiple_connected_components():
     schema.labels.append(label2)
 
     # Component 3: Unconnected wire without a label
-    wire4 = Wire(
-        uuid="wire-uuid-4", points=[Point(50, 50), Point(60, 50)], connected_pins=[]
-    )
+    wire4 = Wire(uuid="wire-uuid-4", points=[Point(50, 50), Point(60, 50)])
     schema.wires[wire4.uuid] = wire4
 
     # There should be 3 separate nets
@@ -1146,15 +1120,11 @@ def test_schema_nets_labels_on_wire_points():
     schema = Schema()
 
     # Wire 1: from (0, 0) to (10, 0)
-    wire1 = Wire(
-        uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[]
-    )
+    wire1 = Wire(uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)])
     schema.wires[wire1.uuid] = wire1
 
     # Wire 2: from (20, 0) to (30, 0)
-    wire2 = Wire(
-        uuid="wire-uuid-2", points=[Point(20, 0), Point(30, 0)], connected_pins=[]
-    )
+    wire2 = Wire(uuid="wire-uuid-2", points=[Point(20, 0), Point(30, 0)])
     schema.wires[wire2.uuid] = wire2
 
     # Labels positioned on wire points (endpoints)
@@ -1273,7 +1243,6 @@ def test_net_with_points():
     wire = Wire(
         uuid="wire-uuid-1",
         points=[Point(0, 0), Point(10, 0), Point(10, 10)],
-        connected_pins=[],
     )
 
     net = Net(
@@ -1298,9 +1267,7 @@ def test_net_with_connected_pins():
     from cifconv.pin_instance import PinInstance
     from cifconv.symbol_instance import SymbolInstance
 
-    wire = Wire(
-        uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[]
-    )
+    wire = Wire(uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)])
 
     pin1 = PinInstance(
         number="1", name="OUT", type="output", x=0.0, y=0.0, rotation=0.0
@@ -1576,7 +1543,7 @@ def test_schema_nets_with_connected_pins():
     schema.instances.append(instance1)
     schema.instances.append(instance2)
 
-    wire = Wire(uuid="wire-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[])
+    wire = Wire(uuid="wire-1", points=[Point(0, 0), Point(10, 0)])
     schema.wires[wire.uuid] = wire
 
     label = Label(text="NET1", x=0, y=0, rotation=0, uuid="label-1")
@@ -1633,7 +1600,7 @@ def test_schema_nets_with_no_connect():
     )
     schema.instances.append(instance)
 
-    wire = Wire(uuid="wire-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[])
+    wire = Wire(uuid="wire-1", points=[Point(0, 0), Point(10, 0)])
     schema.wires[wire.uuid] = wire
 
     no_connect = NoConnect(x=10.0, y=0.0, uuid="nc-1")
@@ -1657,11 +1624,8 @@ def test_schema_nets_points_collection():
     wire1 = Wire(
         uuid="wire-1",
         points=[Point(0, 0), Point(10, 0), Point(10, 10)],
-        connected_pins=[],
     )
-    wire2 = Wire(
-        uuid="wire-2", points=[Point(20, 20), Point(30, 20)], connected_pins=[]
-    )
+    wire2 = Wire(uuid="wire-2", points=[Point(20, 20), Point(30, 20)])
     schema.wires[wire1.uuid] = wire1
     schema.wires[wire2.uuid] = wire2
 
