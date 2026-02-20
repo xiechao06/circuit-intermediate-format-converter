@@ -2,7 +2,6 @@ from functools import cached_property
 
 from cifconv.bus import Bus
 from cifconv.bus_entry import BusEntry
-from cifconv.junction import Junction
 from cifconv.label import Label
 from cifconv.net import Net
 from cifconv.no_connect import NoConnect
@@ -20,7 +19,6 @@ class Schema:
         self.wires: dict[str, Wire] = {}
         self.buses: dict[str, Bus] = {}
         self.labels: list[Label] = []
-        self.junctions: dict[str, Junction] = {}
         self.no_connects: list[NoConnect] = []
         self.bus_entries: dict[str, BusEntry] = {}
 

@@ -7,7 +7,6 @@ from cifconv.cifconv_eval import (
     expect_str,
     is_list,
     process_bus_entry,
-    process_junction,
     process_label,
     process_no_connect,
     process_pin,
@@ -685,68 +684,6 @@ def test_process_label_missing_at():
         process_label(expr)
 
 
-def test_process_junction():
-    input_data = """
-    (junction
-        (at 100.5 50.25)
-        (diameter 0)
-        (color 0 0 0 0)
-        (uuid "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
-    )
-"""
-    tokens = list(kicad_sch_tokenize(input_data))
-    expr = read_expr(t for t in tokens)
-    assert isinstance(expr, ListExpr)
-    junction = process_junction(expr)
-
-    assert junction.x == 100.5
-    assert junction.y == 50.25
-    assert junction.uuid == "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-
-
-def test_process_junction_without_optional_fields():
-    input_data = """
-    (junction
-        (at 200 150)
-        (uuid "11111111-2222-3333-4444-555555555555")
-    )
-"""
-    tokens = list(kicad_sch_tokenize(input_data))
-    expr = read_expr(t for t in tokens)
-    assert isinstance(expr, ListExpr)
-    junction = process_junction(expr)
-
-    assert junction.x == 200
-    assert junction.y == 150
-    assert junction.uuid == "11111111-2222-3333-4444-555555555555"
-
-
-def test_process_junction_missing_uuid():
-    input_data = """
-    (junction
-        (at 10 20)
-    )
-"""
-    tokens = list(kicad_sch_tokenize(input_data))
-    expr = read_expr(t for t in tokens)
-    assert isinstance(expr, ListExpr)
-    with pytest.raises(ValueError, match="Junction is missing uuid"):
-        process_junction(expr)
-
-
-def test_process_junction_missing_at():
-    input_data = """
-    (junction
-        (uuid "aaa-bbb")
-    )
-"""
-    tokens = list(kicad_sch_tokenize(input_data))
-    expr = read_expr(t for t in tokens)
-    assert isinstance(expr, ListExpr)
-    with pytest.raises(ValueError, match="Junction is missing position"):
-        process_junction(expr)
-
-
 def test_process_no_connect():
     input_data = """
     (no_connect
@@ -910,7 +847,6 @@ def test_schema_nets_property_unnamed_net():
 
 
 def test_schema_nets_property_multiple_connected_elements():
-    from cifconv.junction import Junction
     from cifconv.label import Label
     from cifconv.point import Point
     from cifconv.schema import Schema
@@ -924,10 +860,6 @@ def test_schema_nets_property_multiple_connected_elements():
     wire2 = Wire(uuid="wire-uuid-2", points=[Point(10, 0), Point(20, 0)])
     schema.wires[wire1.uuid] = wire1
     schema.wires[wire2.uuid] = wire2
-
-    # Add a junction at the connection point
-    junction = Junction(x=10, y=0, uuid="junction-uuid-1")
-    schema.junctions[junction.uuid] = junction
 
     # Add a label at the connection point
     label = Label(text="SIGNAL_A", x=10, y=0, rotation=0, uuid="label-uuid-1")
@@ -977,7 +909,6 @@ def test_schema_nets_with_bus_and_bus_entry():
 
 def test_schema_nets_with_multiple_buses_connected_via_junction():
     from cifconv.bus import Bus
-    from cifconv.junction import Junction
     from cifconv.label import Label
     from cifconv.point import Point
     from cifconv.schema import Schema
@@ -992,10 +923,6 @@ def test_schema_nets_with_multiple_buses_connected_via_junction():
     # Add second bus
     bus2 = Bus(uuid="bus-uuid-2", points=[Point(10, 0), Point(20, 0)])
     schema.buses[bus2.uuid] = bus2
-
-    # Add a junction at the connection point
-    junction = Junction(x=10, y=0, uuid="junction-uuid-1")
-    schema.junctions[junction.uuid] = junction
 
     # Add a label at the connection point
     label = Label(text="MULTI_BUS_NET", x=10, y=0, rotation=0, uuid="label-uuid-1")
@@ -1050,7 +977,6 @@ def test_schema_nets_multiple_separate_networks():
 
 def test_schema_nets_multiple_connected_components():
     from cifconv.bus_entry import BusEntry
-    from cifconv.junction import Junction
     from cifconv.label import Label
     from cifconv.point import Point
     from cifconv.schema import Schema
@@ -1059,15 +985,13 @@ def test_schema_nets_multiple_connected_components():
     # Create a schema with multiple connected components
     schema = Schema()
 
-    # Component 1: Two wires connected by a junction with a label
+    # Component 1: Two wires connected with a label
     wire1 = Wire(uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)])
     wire2 = Wire(uuid="wire-uuid-2", points=[Point(10, 0), Point(20, 0)])
-    junction1 = Junction(x=10, y=0, uuid="junction-uuid-1")
     label1 = Label(text="POWER_RAIL", x=10, y=0, rotation=0, uuid="label-uuid-1")
 
     schema.wires[wire1.uuid] = wire1
     schema.wires[wire2.uuid] = wire2
-    schema.junctions[junction1.uuid] = junction1
     schema.labels.append(label1)
 
     # Component 2: A bus entry and wire with a different label

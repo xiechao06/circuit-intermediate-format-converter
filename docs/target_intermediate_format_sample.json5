@@ -1,0 +1,167 @@
+{
+    "buses": [
+        {
+            "name": "BUS1",
+            "net": "net_xxx", // name of the net
+            "points": [
+                {
+                    "x": 1200,
+                    "y": 1800
+                },
+                {
+                    "x": 1200,
+                    "y": 2200
+                },
+                {
+                    "x": 2600,
+                    "y": 2200
+                }
+            ],
+            "uuid": "bus_001" // unique identifier of the bus
+        }
+    ],
+    "instances": [
+        {
+            "attributes": {
+                "description": "",
+                "Tolerance": "1%",
+                "Value": "10k"
+            },
+            "designator": "R1",
+            "lib_id": "res_0603",
+            "placement": {
+                "mirror": false,
+                "rotation": 0,
+                "x": 3000,
+                "y": 2000
+            },
+            "uuid": "inst_001"
+        },
+        {
+            "attributes": {
+                "description": "",
+                "Firmware": "v1.0.hex",
+                "Value": "STM32F103C8T6"
+            },
+            "designator": "U1",
+            "lib_id": "stm32f103",
+            "placement": {
+                "mirror": false,
+                "rotation": 0,
+                "x": 3000,
+                "y": 2000
+            },
+            "uuid": "inst_002"
+        }
+    ],
+    "library": [
+        {
+            // each key is the name of the symbol in the library
+            "res_0603": {
+                "graphics_ref": "std_zigzag_res",
+                "pins": [
+                    {
+                        "id": "1",
+                        "name": "1",
+                        "rel_x": -600,
+                        "rel_y": -700,
+                        "type": "passive"
+                    },
+                    {
+                        "id": "2",
+                        "name": "2",
+                        "rel_x": 600,
+                        "rel_y": -700,
+                        "type": "passive"
+                    }
+                ],
+                "ref": "R",
+                "type": "Resistor"
+            }
+        },
+        {
+            "stm32f103": {
+                "package": "LQFP48",
+                "pins": [
+                    {
+                        "id": "1",
+                        "name": "VDD",
+                        "rel_x": -600,
+                        "rel_y": -700,
+                        "type": "power_in"
+                    },
+                    {
+                        "id": "2",
+                        "name": "GND",
+                        "rel_x": -600,
+                        "rel_y": -600,
+                        "type": "power_in"
+                    },
+                    {
+                        "id": "3",
+                        "name": "PA0",
+                        "rel_x": -600,
+                        "rel_y": -500,
+                        "type": "bidirectional"
+                    }
+                ],
+                "ref": "U",
+                "type": "MCU"
+            }
+        }
+    ],
+    "nets": [
+        {
+            "name": null,
+            "net_id": "net_xxx",
+            "pins": [
+                {
+                    "pin": "12", // pin number
+                    "ref": "U4" // instance reference
+                },
+                {
+                    "pin": "11",
+                    "ref": "U2"
+                }
+            ]
+        },
+        {
+            "name": "GND",
+            "net_id": "net_xxx",
+            "pins": [
+                {
+                    "pin": "2",
+                    "ref": "U2"
+                },
+                {
+                    "pin": "1",
+                    "ref": "U1"
+                },
+                {
+                    "pin": "1",
+                    "ref": "U3"
+                }
+            ]
+        }
+    ],
+    "wires": [
+        {
+            "net": "net_xxx", // name of the net
+            "points": [
+                {
+                    "x": 1200,
+                    "y": 1800
+                },
+                {
+                    "x": 1200,
+                    "y": 2200
+                },
+                {
+                    "x": 2600,
+                    "y": 2200
+                }
+            ],
+            "uuid": "wire_xx"
+        }
+    ]
+}
