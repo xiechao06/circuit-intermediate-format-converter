@@ -17,8 +17,10 @@ from cifconv.cifconv_eval import (
 )
 from cifconv.expr import ListExpr
 from cifconv.kicad_schematic_tokenizer import kicad_sch_tokenize
+from cifconv.label import Label
 from cifconv.point import Point
 from cifconv.read_expr import read_expr
+from cifconv.wire import Wire
 
 
 def test_is_list():
@@ -1132,4 +1134,550 @@ def test_schema_nets_multiple_connected_components():
 
     auto_net = next(net for net in nets if net.name.startswith("net_"))
     assert len(auto_net.wires) == 1
-    assert len(auto_net.wires) == 1  # Just the single unconnected wire
+
+
+def test_schema_nets_labels_on_wire_points():
+    from cifconv.label import Label
+    from cifconv.point import Point
+    from cifconv.schema import Schema
+    from cifconv.wire import Wire
+
+    # Create a schema with wires and labels positioned on wire points
+    schema = Schema()
+
+    # Wire 1: from (0, 0) to (10, 0)
+    wire1 = Wire(
+        uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[]
+    )
+    schema.wires[wire1.uuid] = wire1
+
+    # Wire 2: from (20, 0) to (30, 0)
+    wire2 = Wire(
+        uuid="wire-uuid-2", points=[Point(20, 0), Point(30, 0)], connected_pins=[]
+    )
+    schema.wires[wire2.uuid] = wire2
+
+    # Labels positioned on wire points (endpoints)
+    label1 = Label(text="NET1", x=0, y=0, rotation=0, uuid="label-1")
+    label2 = Label(text="NET2", x=20, y=0, rotation=0, uuid="label-2")
+    schema.labels.append(label1)
+    schema.labels.append(label2)
+
+    # There should be 2 separate nets
+    nets = schema.nets
+    assert len(nets) == 2
+
+    net_names = [net.name for net in nets]
+    assert "NET1" in net_names
+    assert "NET2" in net_names
+
+
+def test_pin_instance_creation():
+    from cifconv.pin_instance import PinInstance
+
+    pin_instance = PinInstance(
+        number="1",
+        name="VCC",
+        type="power_in",
+        x=100.0,
+        y=50.0,
+        rotation=90.0,
+    )
+
+    assert pin_instance.number == "1"
+    assert pin_instance.name == "VCC"
+    assert pin_instance.type == "power_in"
+    assert pin_instance.x == 100.0
+    assert pin_instance.y == 50.0
+    assert pin_instance.rotation == 90.0
+
+
+def test_pin_instance_with_none_type():
+    from cifconv.pin_instance import PinInstance
+
+    pin_instance = PinInstance(
+        number="2",
+        name="GND",
+        type=None,
+        x=0.0,
+        y=0.0,
+        rotation=0.0,
+    )
+
+    assert pin_instance.number == "2"
+    assert pin_instance.name == "GND"
+    assert pin_instance.type is None
+    assert pin_instance.x == 0.0
+    assert pin_instance.y == 0.0
+    assert pin_instance.rotation == 0.0
+
+
+def test_symbol_instance_with_pin_instances():
+    from cifconv.pin_instance import PinInstance
+    from cifconv.symbol_instance import SymbolInstance
+
+    pin_instances = [
+        PinInstance(
+            number="1", name="VCC", type="power_in", x=10.0, y=20.0, rotation=0.0
+        ),
+        PinInstance(
+            number="2", name="GND", type="power_in", x=10.0, y=30.0, rotation=0.0
+        ),
+        PinInstance(
+            number="3", name="OUT", type="output", x=20.0, y=25.0, rotation=180.0
+        ),
+    ]
+
+    symbol_instance = SymbolInstance(
+        uuid="test-uuid-123",
+        lib_id="Device:R",
+        designator="R1",
+        x=50.0,
+        y=50.0,
+        rotation=90.0,
+        attributes={"Value": "10k"},
+        pin_instances=pin_instances,
+    )
+
+    assert symbol_instance.uuid == "test-uuid-123"
+    assert symbol_instance.lib_id == "Device:R"
+    assert symbol_instance.designator == "R1"
+    assert symbol_instance.x == 50.0
+    assert symbol_instance.y == 50.0
+    assert symbol_instance.rotation == 90.0
+    assert symbol_instance.pin_instances is not None
+    assert len(symbol_instance.pin_instances) == 3
+    assert symbol_instance.pin_instances[0].name == "VCC"
+    assert symbol_instance.pin_instances[1].name == "GND"
+    assert symbol_instance.pin_instances[2].name == "OUT"
+
+
+def test_symbol_instance_without_pin_instances():
+    from cifconv.symbol_instance import SymbolInstance
+
+    symbol_instance = SymbolInstance(
+        uuid="test-uuid-456",
+        lib_id="Device:C",
+        designator="C1",
+        x=100.0,
+        y=100.0,
+        rotation=0.0,
+    )
+
+    assert symbol_instance.pin_instances is None
+
+
+def test_net_with_points():
+    from cifconv.net import Net
+
+    wire = Wire(
+        uuid="wire-uuid-1",
+        points=[Point(0, 0), Point(10, 0), Point(10, 10)],
+        connected_pins=[],
+    )
+
+    net = Net(
+        name="TEST_NET",
+        wires=[wire],
+        buses=[],
+        junctions=[],
+        bus_entries=[],
+        points=[Point(0, 0), Point(10, 0), Point(10, 10)],
+    )
+
+    assert net.name == "TEST_NET"
+    assert net.points is not None
+    assert len(net.points) == 3
+    assert Point(0, 0) in net.points
+    assert Point(10, 0) in net.points
+    assert Point(10, 10) in net.points
+
+
+def test_net_with_connected_pins():
+    from cifconv.net import Net
+    from cifconv.pin_instance import PinInstance
+    from cifconv.symbol_instance import SymbolInstance
+
+    wire = Wire(
+        uuid="wire-uuid-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[]
+    )
+
+    pin1 = PinInstance(
+        number="1", name="OUT", type="output", x=0.0, y=0.0, rotation=0.0
+    )
+    pin2 = PinInstance(
+        number="2", name="IN", type="input", x=10.0, y=0.0, rotation=180.0
+    )
+
+    instance1 = SymbolInstance(
+        uuid="inst-uuid-1",
+        lib_id="Device:R",
+        designator="R1",
+        x=0.0,
+        y=0.0,
+        pin_instances=[pin1],
+    )
+    instance2 = SymbolInstance(
+        uuid="inst-uuid-2",
+        lib_id="Device:R",
+        designator="R2",
+        x=10.0,
+        y=0.0,
+        pin_instances=[pin2],
+    )
+
+    net = Net(
+        name="CONNECTED_NET",
+        wires=[wire],
+        buses=[],
+        junctions=[],
+        bus_entries=[],
+        points=[Point(0, 0), Point(10, 0)],
+        connected_pins=[(instance1, pin1), (instance2, pin2)],
+    )
+
+    assert net.connected_pins is not None
+    assert len(net.connected_pins) == 2
+    assert net.connected_pins[0][0].designator == "R1"
+    assert net.connected_pins[0][1].name == "OUT"
+    assert net.connected_pins[1][0].designator == "R2"
+    assert net.connected_pins[1][1].name == "IN"
+
+
+def test_process_symbol_instance_with_symbol_definition():
+    input_symbol = """
+(symbol "Device:R"
+    (property "Reference" "R"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)))
+    )
+    (property "Footprint" "Resistor_SMD:R_0805"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)) (hide yes))
+    )
+    (symbol "R_1_1"
+        (pin passive line
+            (at -5.08 0 0)
+            (length 2.54)
+            (name "1"
+                (effects (font (size 1.27 1.27)))
+            )
+            (number "1"
+                (effects (font (size 1.27 1.27)))
+            )
+        )
+        (pin passive line
+            (at 5.08 0 180)
+            (length 2.54)
+            (name "2"
+                (effects (font (size 1.27 1.27)))
+            )
+            (number "2"
+                (effects (font (size 1.27 1.27)))
+            )
+        )
+    )
+)
+"""
+    input_instance = """
+(symbol
+    (lib_id "Device:R")
+    (at 100 50 0)
+    (uuid "test-instance-uuid")
+    (property "Reference" "R1"
+        (at 100 50 0)
+        (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "10k"
+        (at 100 50 0)
+        (effects (font (size 1.27 1.27)))
+    )
+)
+"""
+    from cifconv.schema import Schema
+
+    schema = Schema()
+
+    tokens = list(kicad_sch_tokenize(input_symbol))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    symbol = process_symbol(expr)
+    schema.symbols[symbol.lib_id] = symbol
+
+    tokens = list(kicad_sch_tokenize(input_instance))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    instance = process_symbol_instance(expr, schema)
+
+    assert instance.uuid == "test-instance-uuid"
+    assert instance.lib_id == "Device:R"
+    assert instance.designator == "R1"
+    assert instance.x == 100.0
+    assert instance.y == 50.0
+    assert instance.rotation == 0.0
+
+    assert instance.pin_instances is not None
+    assert len(instance.pin_instances) == 2
+
+    pin1 = instance.pin_instances[0]
+    assert pin1.number == "1"
+    assert pin1.name == "1"
+    assert pin1.type == "passive"
+    assert pin1.x == 100.0 + (-5.08)
+    assert pin1.y == 50.0 + 0.0
+    assert pin1.rotation == 0.0
+
+    pin2 = instance.pin_instances[1]
+    assert pin2.number == "2"
+    assert pin2.name == "2"
+    assert pin2.type == "passive"
+    assert pin2.x == 100.0 + 5.08
+    assert pin2.y == 50.0 + 0.0
+    assert pin2.rotation == 180.0
+
+
+def test_process_symbol_instance_with_rotation():
+    input_symbol = """
+(symbol "Device:R"
+    (property "Reference" "R"
+        (at 0 0 0)
+        (effects (font (size 1.27 1.27)))
+    )
+    (symbol "R_1_1"
+        (pin passive line
+            (at -5.08 0 0)
+            (length 2.54)
+            (name "1" (effects (font (size 1.27 1.27))))
+            (number "1" (effects (font (size 1.27 1.27))))
+        )
+        (pin passive line
+            (at 5.08 0 180)
+            (length 2.54)
+            (name "2" (effects (font (size 1.27 1.27))))
+            (number "2" (effects (font (size 1.27 1.27))))
+        )
+    )
+)
+"""
+    input_instance = """
+(symbol
+    (lib_id "Device:R")
+    (at 100 50 90)
+    (uuid "test-instance-uuid-rotated")
+    (property "Reference" "R2"
+        (at 100 50 0)
+        (effects (font (size 1.27 1.27)))
+    )
+)
+"""
+    import math
+
+    from cifconv.schema import Schema
+
+    schema = Schema()
+
+    tokens = list(kicad_sch_tokenize(input_symbol))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    symbol = process_symbol(expr)
+    schema.symbols[symbol.lib_id] = symbol
+
+    tokens = list(kicad_sch_tokenize(input_instance))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    instance = process_symbol_instance(expr, schema)
+
+    assert instance.rotation == 90.0
+    assert instance.pin_instances is not None
+    assert len(instance.pin_instances) == 2
+
+    pin1 = instance.pin_instances[0]
+    rad = math.radians(90)
+    expected_x1 = 100.0 + (-5.08) * math.cos(rad) - 0.0 * math.sin(rad)
+    expected_y1 = 50.0 + (-5.08) * math.sin(rad) + 0.0 * math.cos(rad)
+    assert abs(pin1.x - expected_x1) < 0.001
+    assert abs(pin1.y - expected_y1) < 0.001
+    assert pin1.rotation == 90.0
+
+    pin2 = instance.pin_instances[1]
+    expected_x2 = 100.0 + 5.08 * math.cos(rad) - 0.0 * math.sin(rad)
+    expected_y2 = 50.0 + 5.08 * math.sin(rad) + 0.0 * math.cos(rad)
+    assert abs(pin2.x - expected_x2) < 0.001
+    assert abs(pin2.y - expected_y2) < 0.001
+    assert pin2.rotation == 270.0
+
+
+def test_process_symbol_instance_without_symbol_definition():
+    input_instance = """
+(symbol
+    (lib_id "Device:Unknown")
+    (at 50 50 0)
+    (uuid "test-uuid-unknown")
+    (property "Reference" "U1"
+        (at 50 50 0)
+        (effects (font (size 1.27 1.27)))
+    )
+)
+"""
+    from cifconv.schema import Schema
+
+    schema = Schema()
+
+    tokens = list(kicad_sch_tokenize(input_instance))
+    expr = read_expr(t for t in tokens)
+    assert isinstance(expr, ListExpr)
+    instance = process_symbol_instance(expr, schema)
+
+    assert instance.uuid == "test-uuid-unknown"
+    assert instance.lib_id == "Device:Unknown"
+    assert instance.designator == "U1"
+    assert instance.pin_instances is None
+
+
+def test_schema_nets_with_connected_pins():
+    from cifconv.pin_instance import PinInstance
+    from cifconv.schema import Schema
+    from cifconv.symbol import Symbol
+    from cifconv.symbol_instance import SymbolInstance
+
+    schema = Schema()
+
+    symbol = Symbol(
+        lib_id="Device:R",
+        type="Device",
+        ref="R",
+        pins=[],
+        package=None,
+        description=None,
+    )
+    schema.symbols["Device:R"] = symbol
+
+    pin1 = PinInstance(number="1", name="1", type="passive", x=0.0, y=0.0, rotation=0.0)
+    pin2 = PinInstance(
+        number="2", name="2", type="passive", x=10.0, y=0.0, rotation=0.0
+    )
+
+    instance1 = SymbolInstance(
+        uuid="inst-1",
+        lib_id="Device:R",
+        designator="R1",
+        x=0.0,
+        y=0.0,
+        pin_instances=[pin1],
+    )
+    instance2 = SymbolInstance(
+        uuid="inst-2",
+        lib_id="Device:R",
+        designator="R2",
+        x=10.0,
+        y=0.0,
+        pin_instances=[pin2],
+    )
+    schema.instances.append(instance1)
+    schema.instances.append(instance2)
+
+    wire = Wire(uuid="wire-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[])
+    schema.wires[wire.uuid] = wire
+
+    label = Label(text="NET1", x=0, y=0, rotation=0, uuid="label-1")
+    schema.labels.append(label)
+
+    nets = schema.nets
+    assert len(nets) == 1
+
+    net = nets[0]
+    assert net.name == "NET1"
+    assert net.points is not None
+    assert Point(0, 0) in net.points
+    assert Point(10, 0) in net.points
+
+    assert net.connected_pins is not None
+    assert len(net.connected_pins) == 2
+
+    connected_designators = {cp[0].designator for cp in net.connected_pins}
+    assert "R1" in connected_designators
+    assert "R2" in connected_designators
+
+
+def test_schema_nets_with_no_connect():
+    from cifconv.no_connect import NoConnect
+    from cifconv.pin_instance import PinInstance
+    from cifconv.schema import Schema
+    from cifconv.symbol import Symbol
+    from cifconv.symbol_instance import SymbolInstance
+
+    schema = Schema()
+
+    symbol = Symbol(
+        lib_id="Device:R",
+        type="Device",
+        ref="R",
+        pins=[],
+        package=None,
+        description=None,
+    )
+    schema.symbols["Device:R"] = symbol
+
+    pin1 = PinInstance(number="1", name="1", type="passive", x=0.0, y=0.0, rotation=0.0)
+    pin2 = PinInstance(
+        number="2", name="2", type="passive", x=10.0, y=0.0, rotation=0.0
+    )
+
+    instance = SymbolInstance(
+        uuid="inst-1",
+        lib_id="Device:R",
+        designator="R1",
+        x=0.0,
+        y=0.0,
+        pin_instances=[pin1, pin2],
+    )
+    schema.instances.append(instance)
+
+    wire = Wire(uuid="wire-1", points=[Point(0, 0), Point(10, 0)], connected_pins=[])
+    schema.wires[wire.uuid] = wire
+
+    no_connect = NoConnect(x=10.0, y=0.0, uuid="nc-1")
+    schema.no_connects.append(no_connect)
+
+    nets = schema.nets
+    assert len(nets) == 1
+
+    net = nets[0]
+    assert net.connected_pins is not None
+    assert len(net.connected_pins) == 1
+    assert net.connected_pins[0][0].designator == "R1"
+    assert net.connected_pins[0][1].name == "1"
+
+
+def test_schema_nets_points_collection():
+    from cifconv.schema import Schema
+
+    schema = Schema()
+
+    wire1 = Wire(
+        uuid="wire-1",
+        points=[Point(0, 0), Point(10, 0), Point(10, 10)],
+        connected_pins=[],
+    )
+    wire2 = Wire(
+        uuid="wire-2", points=[Point(20, 20), Point(30, 20)], connected_pins=[]
+    )
+    schema.wires[wire1.uuid] = wire1
+    schema.wires[wire2.uuid] = wire2
+
+    nets = schema.nets
+    assert len(nets) == 2
+
+    net1 = next(n for n in nets if Point(0, 0) in (n.points or []))
+    net2 = next(n for n in nets if Point(20, 20) in (n.points or []))
+
+    assert net1.points is not None
+    assert len(net1.points) == 3
+    assert Point(0, 0) in net1.points
+    assert Point(10, 0) in net1.points
+    assert Point(10, 10) in net1.points
+
+    assert net2.points is not None
+    assert len(net2.points) == 2
+    assert Point(20, 20) in net2.points
+    assert Point(30, 20) in net2.points

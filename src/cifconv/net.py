@@ -1,9 +1,15 @@
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from cifconv.bus import Bus
 from cifconv.bus_entry import BusEntry
 from cifconv.junction import Junction
+from cifconv.point import Point
 from cifconv.wire import Wire
+
+if TYPE_CHECKING:
+    from cifconv.pin_instance import PinInstance
+    from cifconv.symbol_instance import SymbolInstance
 
 
 @dataclass
@@ -15,3 +21,5 @@ class Net:
     buses: list[Bus]
     junctions: list[Junction]
     bus_entries: list[BusEntry]
+    points: list[Point] | None = None
+    connected_pins: list[tuple["SymbolInstance", "PinInstance"]] | None = None

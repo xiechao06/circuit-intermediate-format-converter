@@ -6,6 +6,7 @@ from cifconv.junction import Junction
 from cifconv.label import Label
 from cifconv.net import Net
 from cifconv.no_connect import NoConnect
+from cifconv.pin_instance import PinInstance
 from cifconv.point import Point
 from cifconv.symbol import Symbol
 from cifconv.symbol_instance import SymbolInstance
@@ -69,6 +70,26 @@ class Schema:
         element_to_group: dict[tuple[str, str], tuple[str, str]] = {}
 
         def find(element: tuple[str, str]) -> tuple[str, str]:
+            """
+            Find the root representative of the connected component that contains the given element.
+
+            This helper implements the 'find' operation of a Union-Find (Disjoint-Set Union) data
+            structure. It returns the canonical tuple that represents the entire connected group
+            to which the supplied element belongs. Path compression is applied so that future
+            queries for the same element (and its ancestors) are faster.
+
+            Parameters
+            ----------
+            element : tuple[str, str]
+                A 2-tuple consisting of (element_type, element_uuid) that uniquely identifies
+                a schematic element (wire, bus, or bus entry).
+
+            Returns
+            -------
+            tuple[str, str]
+                The root tuple of the connected component. All elements sharing the same root
+                are electrically connected.
+            """
             if element not in element_to_group:
                 element_to_group[element] = element
                 return element
@@ -151,6 +172,18 @@ class Schema:
             if point in net_point_to_group:
                 junction_to_group[junction.uuid] = net_point_to_group[point]
 
+        no_connect_positions: set[Point] = set()
+        for no_connect in self.no_connects:
+            no_connect_positions.add(Point(no_connect.x, no_connect.y))
+
+        pin_pos_to_instance: dict[Point, tuple[SymbolInstance, PinInstance]] = {}
+        for instance in self.instances:
+            if instance.pin_instances:
+                for pin in instance.pin_instances:
+                    pin_pos = Point(pin.x, pin.y)
+                    if pin_pos not in no_connect_positions:
+                        pin_pos_to_instance[pin_pos] = (instance, pin)
+
         net_objects: list[Net] = []
         net_counter: int = 0
 
@@ -178,12 +211,26 @@ class Schema:
                 if grp == group_root:
                     junctions_for_net.append(self.junctions[junction_uuid])
 
+            points_for_net: list[Point] = []
+            for point, grp in net_point_to_group.items():
+                if grp == group_root:
+                    points_for_net.append(point)
+
+            connected_pins_for_net: list[tuple[SymbolInstance, PinInstance]] = []
+            for point, grp in net_point_to_group.items():
+                if grp == group_root and point in pin_pos_to_instance:
+                    connected_pins_for_net.append(pin_pos_to_instance[point])
+
             net_obj = Net(
                 name=net_name,
                 wires=wires_for_net,
                 buses=buses_for_net,
                 junctions=junctions_for_net,
                 bus_entries=bus_entries_for_net,
+                points=points_for_net,
+                connected_pins=connected_pins_for_net
+                if connected_pins_for_net
+                else None,
             )
             net_objects.append(net_obj)
 
