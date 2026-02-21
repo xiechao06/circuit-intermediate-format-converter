@@ -1,0 +1,253 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "circuit-intermediate-format.schema.json",
+    "title": "Circuit Intermediate Format",
+    "description": "An intermediate representation of electronic circuit schematics, converted from KiCad schematic format. This format captures the essential connectivity and component information needed for circuit analysis and processing.",
+    "type": "object",
+    "required": ["buses", "instances", "library", "nets", "wires"],
+    "properties": {
+        "buses": {
+            "type": "array",
+            "description": "List of bus definitions in the schematic. Buses are collections of related signals that are routed together. Each bus is parsed from the KiCad schematic's (bus ...) expressions.",
+            "items": {
+                "$ref": "#/definitions/Bus"
+            }
+        },
+        "instances": {
+            "type": "array",
+            "description": "List of symbol instances placed in the schematic. Each instance represents a component (resistor, capacitor, IC, connector, etc.) with its placement and attribute values. Parsed from (symbol_instance ...) expressions in the KiCad schematic.",
+            "items": {
+                "$ref": "#/definitions/Instance"
+            }
+        },
+        "library": {
+            "type": "array",
+            "description": "List of symbol definitions from the library section. Each entry defines a symbol type with its pins and properties. Parsed from (lib_symbols ...) section in the KiCad schematic.",
+            "items": {
+                "$ref": "#/definitions/LibrarySymbol"
+            }
+        },
+        "nets": {
+            "type": "array",
+            "description": "List of electrical nets in the schematic. Nets are computed using Union-Find algorithm on wire/bus/bus_entry endpoints - elements sharing endpoints are electrically connected. Net names are derived from labels placed at connection points, or auto-generated as 'net_N' if no label exists.",
+            "items": {
+                "$ref": "#/definitions/Net"
+            }
+        },
+        "wires": {
+            "type": "array",
+            "description": "List of wire segments in the schematic. Wires define point-to-point electrical connections. Parsed from (wire ...) expressions. Each wire is assigned to a net based on connectivity analysis.",
+            "items": {
+                "$ref": "#/definitions/Wire"
+            }
+        }
+    },
+    "definitions": {
+        "Point": {
+            "type": "object",
+            "description": "A 2D coordinate point in the schematic. Coordinates are in mils (1/1000 inch) as used by KiCad.",
+            "required": ["x", "y"],
+            "properties": {
+                "x": {
+                    "type": "number",
+                    "description": "X coordinate in mils (1/1000 inch)"
+                },
+                "y": {
+                    "type": "number",
+                    "description": "Y coordinate in mils (1/1000 inch)"
+                }
+            }
+        },
+        "Placement": {
+            "type": "object",
+            "description": "Placement information for a symbol instance, including position, rotation, and mirror state. Position is the instance's origin point from the KiCad (at x y rotation) expression.",
+            "required": ["mirror", "rotation", "x", "y"],
+            "properties": {
+                "mirror": {
+                    "type": "boolean",
+                    "description": "Whether the instance is mirrored. Currently always false as mirror state is not yet parsed from KiCad schematics."
+                },
+                "rotation": {
+                    "type": "number",
+                    "description": "Rotation angle in degrees. Parsed from the (at x y rotation) expression in the symbol instance."
+                },
+                "x": {
+                    "type": "number",
+                    "description": "X coordinate of the instance origin in mils. Parsed from the (at x y rotation) expression."
+                },
+                "y": {
+                    "type": "number",
+                    "description": "Y coordinate of the instance origin in mils. Parsed from the (at x y rotation) expression."
+                }
+            }
+        },
+        "Pin": {
+            "type": "object",
+            "description": "Pin definition within a library symbol. Defines the pin's electrical properties and relative position. Parsed from (pin ...) expressions within symbol definitions.",
+            "required": ["id", "name", "rel_x", "rel_y", "type"],
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Pin number/identifier. Parsed from the (number ...) expression within the pin definition."
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Pin name. Parsed from the (name ...) expression within the pin definition."
+                },
+                "rel_x": {
+                    "type": "number",
+                    "description": "Relative X position of the pin from the symbol origin, in mils. Used to calculate absolute pin positions when the symbol is instantiated."
+                },
+                "rel_y": {
+                    "type": "number",
+                    "description": "Relative Y position of the pin from the symbol origin, in mils. Used to calculate absolute pin positions when the symbol is instantiated."
+                },
+                "type": {
+                    "type": "string",
+                    "description": "Electrical type of the pin (e.g., 'input', 'output', 'bidirectional', 'passive', 'power_in', 'power_out'). Parsed from the pin type token in the pin definition.",
+                    "enum": ["input", "output", "bidirectional", "tri_state", "passive", "free", "unspecified", "power_in", "power_out", "open_collector", "open_emitter", "no_connect"]
+                }
+            }
+        },
+        "Bus": {
+            "type": "object",
+            "description": "A bus in the schematic representing a collection of related signals. Parsed from (bus ...) expressions. The net field is computed by finding which net contains this bus during connectivity analysis.",
+            "required": ["name", "net", "points", "uuid"],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Bus identifier. Currently set to the bus UUID from the KiCad schematic."
+                },
+                "net": {
+                    "type": "string",
+                    "description": "UUID of the net this bus belongs to. Computed during net connectivity analysis by checking which net's buses list contains this bus."
+                },
+                "points": {
+                    "type": "array",
+                    "description": "List of points defining the bus path. Parsed from (pts (xy x1 y1) (xy x2 y2) ...) in the bus definition.",
+                    "items": {
+                        "$ref": "#/definitions/Point"
+                    }
+                },
+                "uuid": {
+                    "type": "string",
+                    "description": "Unique identifier for the bus. Parsed from (uuid ...) expression in the KiCad schematic."
+                }
+            }
+        },
+        "Instance": {
+            "type": "object",
+            "description": "A symbol instance placed in the schematic. Represents an actual component with specific values and placement. Parsed from (symbol_instance ...) expressions. Pin positions are computed by applying rotation transformation to the symbol's pin relative positions.",
+            "required": ["attributes", "designator", "lib_id", "placement", "uuid"],
+            "properties": {
+                "attributes": {
+                    "type": "object",
+                    "description": "Key-value pairs of component attributes. Parsed from (property ...) expressions within the symbol instance. Common attributes include 'Value', 'Footprint', 'Datasheet', and custom properties.",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "designator": {
+                    "type": "string",
+                    "description": "Component reference designator (e.g., 'R1', 'U3', 'J5'). Parsed from the 'Reference' property of the symbol instance."
+                },
+                "lib_id": {
+                    "type": "string",
+                    "description": "Library identifier for the symbol type (e.g., 'Device:R', 'Connector_Generic:Conn_01x09'). Parsed from (lib_id ...) in the symbol instance."
+                },
+                "placement": {
+                    "$ref": "#/definitions/Placement",
+                    "description": "Placement information including position and rotation. Parsed from the (at ...) expression."
+                },
+                "uuid": {
+                    "type": "string",
+                    "description": "Unique identifier for the instance. Parsed from (uuid ...) expression."
+                }
+            }
+        },
+        "LibrarySymbol": {
+            "type": "object",
+            "description": "A symbol definition from the library. Each object has a single key-value pair where the key is the lib_id and the value contains the symbol definition. Parsed from (symbol ...) expressions within (lib_symbols ...).",
+            "additionalProperties": {
+                "type": "object",
+                "required": ["pins", "ref", "type"],
+                "properties": {
+                    "pins": {
+                        "type": "array",
+                        "description": "List of pin definitions for this symbol. Parsed from (pin ...) expressions within the symbol definition.",
+                        "items": {
+                            "$ref": "#/definitions/Pin"
+                        }
+                    },
+                    "ref": {
+                        "type": "string",
+                        "description": "Reference prefix for this symbol type (e.g., 'R' for resistors, 'U' for ICs). Parsed from the 'Reference' property."
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "Symbol type/category (e.g., 'Resistor', 'MCU'). Parsed from the 'Description' or derived from the symbol name."
+                    }
+                }
+            }
+        },
+        "NetPin": {
+            "type": "object",
+            "description": "A pin connection within a net. Identifies which instance and pin number is connected to the net. Computed by matching pin absolute positions (calculated from symbol instance rotation + pin relative position) against net wire endpoints.",
+            "required": ["pin", "ref"],
+            "properties": {
+                "pin": {
+                    "type": "string",
+                    "description": "Pin number of the connected pin."
+                },
+                "ref": {
+                    "type": "string",
+                    "description": "Reference designator of the instance whose pin is connected."
+                }
+            }
+        },
+        "Net": {
+            "type": "object",
+            "description": "An electrical net representing a set of connected components. Nets are computed using Union-Find algorithm: all wires/buses/bus_entries sharing endpoints form a connected group. Net names come from labels at connection points, or are auto-generated. Pins are matched by comparing their absolute positions against net wire endpoints, excluding pins marked with no_connect.",
+            "required": ["name", "net_id", "pins"],
+            "properties": {
+                "name": {
+                    "type": ["string", "null"],
+                    "description": "Net name. If a label (label, global_label, or hierarchical_label) exists at any connection point in the net, that label's text becomes the net name. Otherwise, null is used (the net_id serves as identifier)."
+                },
+                "net_id": {
+                    "type": "string",
+                    "description": "Unique identifier for the net. Generated as a UUID when the net is created during connectivity analysis."
+                },
+                "pins": {
+                    "type": "array",
+                    "description": "List of pins connected to this net. Computed by: 1) Calculating absolute pin positions using rotation transformation (pin_rel_pos rotated by instance_rotation + instance_position), 2) Matching these positions against wire endpoints in the net, 3) Excluding pins at positions marked with (no_connect ...).",
+                    "items": {
+                        "$ref": "#/definitions/NetPin"
+                    }
+                }
+            }
+        },
+        "Wire": {
+            "type": "object",
+            "description": "A wire segment in the schematic. Wires define point-to-point electrical connections. Parsed from (wire ...) expressions. The net field is computed by finding which net contains this wire during connectivity analysis.",
+            "required": ["net", "points", "uuid"],
+            "properties": {
+                "net": {
+                    "type": "string",
+                    "description": "UUID of the net this wire belongs to. Computed during net connectivity analysis by checking which net's wires list contains this wire."
+                },
+                "points": {
+                    "type": "array",
+                    "description": "List of points defining the wire path. Parsed from (pts (xy x1 y1) (xy x2 y2) ...) in the wire definition.",
+                    "items": {
+                        "$ref": "#/definitions/Point"
+                    }
+                },
+                "uuid": {
+                    "type": "string",
+                    "description": "Unique identifier for the wire. Parsed from (uuid ...) expression in the KiCad schematic."
+                }
+            }
+        }
+    }
+}

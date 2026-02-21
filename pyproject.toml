@@ -27,4 +27,7 @@ update_changelog_on_bump = true
 major_version_zero = true
 
 [dependency-groups]
-dev = ["pytest>=9.0.2"]
+dev = [
+    "jsonschema>=4.26.0",
+    "pytest>=9.0.2",
+]
