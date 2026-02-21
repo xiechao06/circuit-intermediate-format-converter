@@ -2,6 +2,8 @@ import uuid
 from functools import cached_property
 from typing import Any
 
+from loguru import logger
+
 from cifconv.bus import Bus
 from cifconv.bus_entry import BusEntry
 from cifconv.label import Label
@@ -277,8 +279,10 @@ class Schema:
             if instance.pin_instances:
                 for pin in instance.pin_instances:
                     pin_pos = Point(pin.x, pin.y)
-                    if pin_pos not in no_connect_positions:
-                        pin_pos_to_instance[pin_pos] = (instance, pin)
+                    if pin_pos in no_connect_positions:
+                        logger.debug(f"Pin {pin} at {pin_pos} is no connect position")
+                        continue
+                    pin_pos_to_instance[pin_pos] = (instance, pin)
 
         net_objects: list[Net] = []
         net_counter: int = 0
